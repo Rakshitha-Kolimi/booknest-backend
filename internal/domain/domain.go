@@ -16,3 +16,10 @@ type Book struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	DeletedAt time.Time `json:"deleted_at"`
 }
+
+type BookInput struct {
+	Title  string  `json:"title"`
+	Author string  `json:"author"`
+	Price  float64 `json:"price"`
+	Stock  int     `json:"stock"`
+}

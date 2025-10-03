@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"booknest/internal/domain"
 )
 
 type DummyBook struct {
@@ -47,4 +49,25 @@ func GetHealth(ctx *gin.Context) {
 
 func GetBooks(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, dummyData)
+}
+
+func AddBook(ctx *gin.Context) {
+	// Bind the input
+	var in domain.BookInput
+	if err := ctx.ShouldBindJSON(&in); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// add the expense
+	bookInput :=  DummyBook {
+		Title:  in.Title,
+		Author: in.Author,
+		Price:  in.Price,
+		Stock:  in.Stock,
+	}
+	dummyData = append(dummyData, bookInput)
+
+	// Return the data
+	ctx.JSON(http.StatusOK, bookInput)
 }

@@ -8,6 +8,16 @@ import (
 	"booknest/internal/domain"
 )
 
+type BookController struct {
+	s domain.BookService
+}
+
+func NewBookController(s domain.BookService) BookController {
+	return BookController{
+		s: s,
+	}
+}
+
 type DummyBook struct {
 	Title  string  `json:"title"`
 	Author string  `json:"author"`
@@ -51,7 +61,7 @@ func GetBooks(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, dummyData)
 }
 
-func AddBook(ctx *gin.Context) {
+func (c BookController) AddBook(ctx *gin.Context) {
 	// Bind the input
 	var in domain.BookInput
 	if err := ctx.ShouldBindJSON(&in); err != nil {
@@ -59,15 +69,12 @@ func AddBook(ctx *gin.Context) {
 		return
 	}
 
-	// add the expense
-	bookInput :=  DummyBook {
-		Title:  in.Title,
-		Author: in.Author,
-		Price:  in.Price,
-		Stock:  in.Stock,
+	book,err := c.s.CreateBook(in)
+	if  err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
-	dummyData = append(dummyData, bookInput)
 
 	// Return the data
-	ctx.JSON(http.StatusOK, bookInput)
+	ctx.JSON(http.StatusOK, book)
 }

@@ -1,20 +1,18 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Global DB variable
-var DB *gorm.DB
+var Pool *pgxpool.Pool
 
-func Connect() {
+func Connect() (*pgxpool.Pool, error) {
 	// You can load these from environment variables or .env file
 	host := os.Getenv("DB_HOST")
 	user := os.Getenv("DB_USER")
@@ -22,34 +20,39 @@ func Connect() {
 	dbName := os.Getenv("DB_NAME")
 	port := os.Getenv("DB_PORT")
 
-	// Example: "postgresql://user:password@localhost:5432/booknest?sslmode=disable"
+	// Build DSN
 	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Kolkata",
-		host, user, password, dbName, port,
+		"postgresql://%s:%s@%s:%s/%s?sslmode=disable&timezone=Asia/Kolkata",
+		user, password, host, port, dbName,
 	)
 
-	// GORM config with pgx driver
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		DriverName: "pgx", // Use pgx instead of default
-		DSN:        dsn,
-		PreferSimpleProtocol: true, // disables prepared statements
-	}), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
+	// Create config
+	config, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
-		log.Fatalf("❌ failed to connect database: %v", err)
+		return nil, fmt.Errorf("failed to parse database config: %w", err)
 	}
 
-	sqlDB, err := db.DB()
+	// Optional tuning
+	config.MaxConns = 20
+	config.MinConns = 5
+	config.MaxConnLifetime = time.Hour
+	config.HealthCheckPeriod = time.Minute * 2
+
+	// Connect
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
-		log.Fatalf("❌ failed to get sqlDB: %v", err)
+		return nil, fmt.Errorf("failed to create pgxpool: %w", err)
 	}
 
-	// Set connection pool
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+	// Ping to verify connection
+	if err = pool.Ping(ctx); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
 
-	log.Println("✅ Connected to PostgreSQL successfully!")
-	DB = db
+	log.Println("✅ Connected to PostgreSQL using pgxpool!")
+	Pool = pool
+	return pool, nil
 }

@@ -28,12 +28,24 @@ type BookInput struct {
 
 type BookRepository interface {
 	CreateBook(ctx context.Context, book *Book) error
+	DeleteBook(ctx context.Context, id uuid.UUID) (err error)
+	GetBooks(ctx context.Context) ([]Book, error)
+	GetBook(ctx context.Context, id uuid.UUID) (Book, error)
+	UpdateBook(ctx context.Context, entity *Book) (err error)
 }
 
 type BookService interface {
-	CreateBook(in BookInput) (book Book, err error)
+	CreateBook(ctx context.Context, in BookInput) (book Book, err error)
+	DeleteBook(ctx context.Context, id uuid.UUID) error
+	GetBooks(ctx context.Context) ([]Book, error)
+	GetBook(ctx context.Context, id uuid.UUID) (Book, error)
+	UpdateBook(ctx context.Context, id uuid.UUID, entity BookInput) (book Book, err error)
 }
 
-type BookController interface{
+type BookController interface {
 	AddBook(ctx *gin.Context)
+	GetBooks(ctx *gin.Context)
+	GetBook(ctx *gin.Context)
+	UpdateBook(ctx *gin.Context)
+	DeleteBook(ctx *gin.Context)
 }

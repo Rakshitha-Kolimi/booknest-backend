@@ -17,7 +17,7 @@ import (
 
 func main() {
 	godotenv.Load()
-	dbpool, err:= database.Connect()
+	dbpool, err := database.Connect()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,8 +35,12 @@ func main() {
 	r.Use(middleware.ErrorHandler())
 
 	r.GET(routes.HealthRoute, controller.GetHealth)
-	r.GET(routes.BooksRoute, controller.GetBooks)
+
 	r.POST(routes.BookRoute, bookController.AddBook)
+	r.GET(routes.BooksRoute, bookController.GetBooks)
+	r.GET(routes.BookIDRoute, bookController.GetBook)
+	r.PUT(routes.BookIDRoute, bookController.UpdateBook)
+	r.PUT(routes.BookIDRoute, bookController.DeleteBook)
 
 	r.GET(routes.UsersRoute, controller.GetUsers)
 	r.POST(routes.UserRoute, controller.AddUser)

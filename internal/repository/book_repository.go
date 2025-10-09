@@ -12,10 +12,6 @@ import (
 	"booknest/internal/domain"
 )
 
-type TxKeyType string
-
-const TxKey TxKeyType = "BookNest-Transactioner"
-
 type bookRepositoryImpl struct {
 	db *pgxpool.Pool
 }

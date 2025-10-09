@@ -27,6 +27,10 @@ func main() {
 	bookService := service.NewBookServiceImpl(bookRepo)
 	bookController := controller.NewBookController(bookService)
 
+	userRepo := repository.NewUserRepositoryImpl(dbpool)
+	userService := service.NewUserServiceImpl(userRepo)
+	userController := controller.NewUserController(userService)
+
 	log.Println("BookNest backend started...")
 
 	r := gin.Default()
@@ -36,14 +40,22 @@ func main() {
 
 	r.GET(routes.HealthRoute, controller.GetHealth)
 
-	r.POST(routes.BookRoute, bookController.AddBook)
-	r.GET(routes.BooksRoute, bookController.GetBooks)
-	r.GET(routes.BookIDRoute, bookController.GetBook)
-	r.PUT(routes.BookIDRoute, bookController.UpdateBook)
-	r.PUT(routes.BookIDRoute, bookController.DeleteBook)
+	auth := r.Group("/")
+	auth.Use(middleware.JWTAuthMiddleware())
+	{
+		auth.POST(routes.BookRoute, bookController.AddBook)
+		auth.GET(routes.BooksRoute, bookController.GetBooks)
+		auth.GET(routes.BookIDRoute, bookController.GetBook)
+		auth.PUT(routes.BookIDRoute, bookController.UpdateBook)
+		auth.PUT(routes.BookIDRoute, bookController.DeleteBook)
 
-	r.GET(routes.UsersRoute, controller.GetUsers)
-	r.POST(routes.UserRoute, controller.AddUser)
+		auth.GET(routes.UsersRoute, userController.GetUsers)
+		auth.GET(routes.UserRoute, userController.GetUserByID)
+		auth.DELETE(routes.UserRoute, userController.DeleteUser)
+	}
+
+	r.POST(routes.RegisterRoute, userController.RegisterUser)
+	r.POST(routes.LoginRoute, userController.LoginUser)
 
 	http.ListenAndServe(":8080", r)
 }

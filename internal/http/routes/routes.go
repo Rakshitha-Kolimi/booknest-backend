@@ -8,5 +8,7 @@ const (
 	BookIDRoute = "/book/:id"
 
 	UsersRoute = "/users"
-	UserRoute = "/user"
+	UserRoute = "/user/:id"
+	LoginRoute = "/login"
+	RegisterRoute ="/register"
 )

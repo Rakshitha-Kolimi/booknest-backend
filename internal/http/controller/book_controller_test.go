@@ -19,6 +19,7 @@ type mockBookService struct {
 	books []domain.Book
 }
 
+// Mock service functions
 func (m *mockBookService) CreateBook(ctx context.Context, in domain.BookInput) (domain.Book, error) {
 	b := domain.Book{
 		ID:     uuid.New(),
@@ -60,10 +61,11 @@ func (m *mockBookService) UpdateBook(ctx context.Context, id uuid.UUID, entity d
 	return b, nil
 }
 
-func setupRouter(s domain.BookService) *gin.Engine {
+func setupRouter(bs domain.BookService, us domain.UserService) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	bc := NewBookController(s)
+	bc := NewBookController(bs)
+	uc := NewUserController(us)
 
 	r.GET("/health", GetHealth)
 	r.GET("/books", bc.GetBooks)
@@ -72,11 +74,16 @@ func setupRouter(s domain.BookService) *gin.Engine {
 	r.POST("/books", bc.AddBook)
 	r.DELETE("/book/:id", bc.DeleteBook)
 
+	r.GET("/users", uc.GetUsers)
+	r.GET("/user/:id", uc.GetUserByID)
+	r.POST("/login", uc.LoginUser)
+	r.POST("/register", uc.RegisterUser)
+	r.DELETE("/user/:id", uc.DeleteUser)
 	return r
 }
 
 func TestGetHealth(t *testing.T) {
-	r := setupRouter(&mockBookService{})
+	r := setupRouter(&mockBookService{}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
@@ -96,7 +103,7 @@ func TestGetHealth(t *testing.T) {
 
 func TestGetBooks_Empty(t *testing.T) {
 	svc := &mockBookService{books: []domain.Book{}}
-	r := setupRouter(svc)
+	r := setupRouter(svc, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/books", nil)
 	w := httptest.NewRecorder()
@@ -116,7 +123,7 @@ func TestGetBooks_Empty(t *testing.T) {
 
 func TestAddBookAndGetBook(t *testing.T) {
 	svc := &mockBookService{books: []domain.Book{}}
-	r := setupRouter(svc)
+	r := setupRouter(svc, nil)
 
 	in := domain.BookInput{Title: "Go in Action", Author: "William", Price: 39.99, Stock: 10}
 	body, _ := json.Marshal(in)
@@ -154,7 +161,7 @@ func TestAddBookAndGetBook(t *testing.T) {
 }
 
 func TestGetBook_BadUUID(t *testing.T) {
-	r := setupRouter(&mockBookService{})
+	r := setupRouter(&mockBookService{}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/book/not-a-uuid", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
@@ -166,7 +173,7 @@ func TestGetBook_BadUUID(t *testing.T) {
 
 func TestDeleteBook_Success(t *testing.T) {
 	svc := &mockBookService{}
-	r := setupRouter(svc)
+	r := setupRouter(svc, nil)
 	id := uuid.New()
 	req := httptest.NewRequest(http.MethodDelete, "/book/"+id.String(), nil)
 	w := httptest.NewRecorder()
@@ -181,7 +188,7 @@ func TestGetBooks_NonEmpty(t *testing.T) {
 	// create service with one book
 	b := domain.Book{ID: uuid.New(), Title: "Test", Author: "Author", Price: 9.99, Stock: 1}
 	svc := &mockBookService{books: []domain.Book{b}}
-	r := setupRouter(svc)
+	r := setupRouter(svc, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/books", nil)
 	w := httptest.NewRecorder()
@@ -201,7 +208,7 @@ func TestGetBooks_NonEmpty(t *testing.T) {
 
 func TestUpdateBook_Success(t *testing.T) {
 	svc := &mockBookService{books: []domain.Book{}}
-	r := setupRouter(svc)
+	r := setupRouter(svc, nil)
 
 	// create a book first
 	in := domain.BookInput{Title: "Original", Author: "A", Price: 10.0, Stock: 5}
@@ -239,7 +246,7 @@ func TestUpdateBook_Success(t *testing.T) {
 }
 
 func TestUpdateBook_BadUUID(t *testing.T) {
-	r := setupRouter(&mockBookService{})
+	r := setupRouter(&mockBookService{}, nil)
 	upd := domain.BookInput{Title: "X"}
 	body, _ := json.Marshal(upd)
 	req := httptest.NewRequest(http.MethodPut, "/book/not-a-uuid", bytes.NewReader(body))

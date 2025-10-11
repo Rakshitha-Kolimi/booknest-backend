@@ -10,7 +10,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var Pool *pgxpool.Pool
+var (
+	Pool *pgxpool.Pool
+
+	// allows test to inject mock behavior
+	newPgxPool = pgxpool.NewWithConfig
+
+	ConnectFunc = Connect
+
+)
 
 func Connect() (*pgxpool.Pool, error) {
 	// You can load these from environment variables or .env file

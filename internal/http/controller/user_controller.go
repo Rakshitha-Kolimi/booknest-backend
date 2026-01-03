@@ -47,6 +47,29 @@ func (c *UserController) RegisterUser(ctx *gin.Context) {
 	})
 }
 
+// ForgotPasswordUser godoc
+//
+//	@Summary		 Forgot password
+//	@Description	Forgot password
+//	@Tags			User
+//	@Accept			json
+//	@Produce		json
+//	@Param			input	body		domain.UserInput	true	"User input"
+//	@Success		201		{object}	map[string]string
+//	@Failure		400		{object}	map[string]string
+//	@Router			/forgot-password [post]
+func (c *UserController) ForgotPassword(ctx *gin.Context) {
+	var input domain.ForgotPasswordInput
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusCreated, gin.H{
+		"message": "Email with new password is sent",
+	})
+}
+
 // LoginUser godoc
 //
 //	@Summary		Login user

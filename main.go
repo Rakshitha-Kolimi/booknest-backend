@@ -9,10 +9,10 @@ import (
 func main() {
 	godotenv.Load()
 
-	r, err := setupServer()
+	r, err := SetupServer()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	startHTTPServer(r)
+	StartHTTPServer(r)
 }

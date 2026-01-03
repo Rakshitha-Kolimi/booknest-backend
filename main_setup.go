@@ -18,7 +18,23 @@ import (
 	"booknest/internal/service"
 )
 
-func setupServer() (*gin.Engine, error) {
+func useCORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
+}
+
+func SetupServer() (*gin.Engine, error) {
 	dbpool, err := database.Connect()
 	if err != nil {
 		return nil, err
@@ -33,6 +49,8 @@ func setupServer() (*gin.Engine, error) {
 	userController := controller.NewUserController(userService)
 
 	r := gin.Default()
+	r.Use(useCORSMiddleware())
+
 	r.Use(gin.Recovery())
 	r.Use(middleware.LoggingMiddleware())
 	r.Use(middleware.ErrorHandler())
@@ -55,12 +73,13 @@ func setupServer() (*gin.Engine, error) {
 
 	r.POST(routes.RegisterRoute, userController.RegisterUser)
 	r.POST(routes.LoginRoute, userController.LoginUser)
+	r.POST(routes.ForgotPassword, userController.ForgotPassword)
 
 	return r, nil
 }
 
 // StartHTTPServer starts the HTTP server — only used by main.go
-func startHTTPServer(r *gin.Engine) {
+func StartHTTPServer(r *gin.Engine) {
 	srv := &http.Server{
 		Addr:    ":8080",
 		Handler: r,

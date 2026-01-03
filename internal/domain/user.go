@@ -27,6 +27,12 @@ type UserInput struct {
 	Password  string `json:"password" binding:"required,min=6"`
 }
 
+// ForgotPasswordInput is used for forgot password
+type ForgotPasswordInput struct {
+	Email     string `json:"email" binding:"required,email"`
+}
+
+
 // Repository interface for data operations
 type UserRepository interface {
 	GetUsers(ctx context.Context) ([]User, error)

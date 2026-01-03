@@ -29,7 +29,7 @@ func TestSetupServer_Success(t *testing.T) {
 	defer func() { database.ConnectFunc = originalConnect }()
 	database.ConnectFunc = mockConnect
 
-	router, err := setupServer()
+	router, err := SetupServer()
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

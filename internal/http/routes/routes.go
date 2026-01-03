@@ -9,6 +9,7 @@ const (
 
 	UsersRoute = "/users"
 	UserRoute = "/user/:id"
+	ForgotPassword = "/forgot-password"
 	LoginRoute = "/login"
 	RegisterRoute ="/register"
 )

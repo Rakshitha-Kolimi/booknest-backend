@@ -1,0 +1,21 @@
+services:
+  api:
+    build: .
+    ports:
+       - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - db
+  
+  db:
+    image: "postgres:15"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: booknest
+      POSTGRES_DB: booknest
+
+volumes:
+  postgres_data:

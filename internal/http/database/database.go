@@ -11,13 +11,8 @@ import (
 )
 
 var (
-	Pool *pgxpool.Pool
-
 	// allows test to inject mock behavior
 	newPgxPool = pgxpool.NewWithConfig
-
-	ConnectFunc = Connect
-
 )
 
 func Connect() (*pgxpool.Pool, error) {
@@ -28,7 +23,7 @@ func Connect() (*pgxpool.Pool, error) {
 	dbName := os.Getenv("DB_NAME")
 	port := os.Getenv("DB_PORT")
 
-	// Build DSN
+	// Build DSN (Data source name)
 	dsn := fmt.Sprintf(
 		"postgresql://%s:%s@%s:%s/%s?sslmode=disable&timezone=Asia/Kolkata",
 		user, password, host, port, dbName,
@@ -61,6 +56,5 @@ func Connect() (*pgxpool.Pool, error) {
 	}
 
 	log.Println("✅ Connected to PostgreSQL using pgxpool!")
-	Pool = pool
 	return pool, nil
 }

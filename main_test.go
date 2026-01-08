@@ -7,14 +7,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"booknest/internal/http/database"
 )
-
-// mock the DB connection to avoid real Postgres
-func mockConnect() (*pgxpool.Pool, error) {
-	return &pgxpool.Pool{}, nil
-}
 
 func TestSetupServer_Success(t *testing.T) {
 	// mock environment variables
@@ -24,12 +17,7 @@ func TestSetupServer_Success(t *testing.T) {
 	os.Setenv("DB_NAME", "booknest_test")
 	os.Setenv("DB_PORT", "5432")
 
-	// temporarily replace database.Connect
-	originalConnect := database.Connect
-	defer func() { database.ConnectFunc = originalConnect }()
-	database.ConnectFunc = mockConnect
-
-	router, err := SetupServer()
+	router, err := SetupServer(&pgxpool.Pool{})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

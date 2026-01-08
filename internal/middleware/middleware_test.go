@@ -37,7 +37,7 @@ func TestErrorHandler_ReportsError(t *testing.T) {
 	r := gin.New()
 	r.Use(ErrorHandler())
 	r.GET("/err", func(c *gin.Context) {
-		c.Error(errors.New("bad request"))
+		_ = c.Error(errors.New("bad request"))
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/err", nil)

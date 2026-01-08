@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"booknest/internal/http/controller"
-	"booknest/internal/http/database"
 	"booknest/internal/http/routes"
 	"booknest/internal/middleware"
 	"booknest/internal/repository"
@@ -34,12 +34,7 @@ func useCORSMiddleware() gin.HandlerFunc {
 	}
 }
 
-func SetupServer() (*gin.Engine, error) {
-	dbpool, err := database.Connect()
-	if err != nil {
-		return nil, err
-	}
-
+func SetupServer(dbpool *pgxpool.Pool) (*gin.Engine, error) {
 	bookRepo := repository.NewBookRepositoryImpl(dbpool)
 	bookService := service.NewBookServiceImpl(bookRepo)
 	bookController := controller.NewBookController(bookService)

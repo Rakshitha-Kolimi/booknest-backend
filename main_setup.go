@@ -12,12 +12,24 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func useCORSMiddleware() gin.HandlerFunc {
+func useCORSMiddleware(allowedOrigins map[string]bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		origin := c.GetHeader("Origin")
+
+		if allowedOrigins[origin] {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			c.Writer.Header().Set("Vary", "Origin")
+			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+			c.Writer.Header().Set(
+				"Access-Control-Allow-Headers",
+				"Content-Type, Authorization",
+			)
+			c.Writer.Header().Set(
+				"Access-Control-Allow-Methods",
+				"GET, POST, PUT, DELETE, OPTIONS",
+			)
+			c.Writer.Header().Set("Access-Control-Max-Age", "86400")
+		}
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -38,7 +50,9 @@ func SetupServer(dbpool *pgxpool.Pool) (*gin.Engine, error) {
 	// userController := controller.NewUserController(userService)
 
 	r := gin.Default()
-	r.Use(useCORSMiddleware())
+	r.Use(useCORSMiddleware(map[string]bool{
+		"http://localhost:3000":   true,
+	}))
 
 	// r.Use(gin.Recovery())
 	// r.Use(middleware.LoggingMiddleware())

@@ -21,9 +21,7 @@ type User struct {
 	IsActive       bool       `gorm:"default:false" json:"is_active"`
 	EmailVerified  bool       `gorm:"default:false" json:"email_verified"`
 	MobileVerified bool       `gorm:"default:false" json:"mobile_verified"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
-	DeletedAt      time.Time  `json:"deleted_at"`
+	BaseEntity
 } // @name User
 
 // UserInput is used for creating or updating users
@@ -57,6 +55,7 @@ type UserRepository interface {
 	Update(ctx context.Context, user *User) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
+
 type UserService interface {
 	Register(in UserInput) error
 	VerifyEmail()

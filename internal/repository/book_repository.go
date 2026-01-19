@@ -2,169 +2,224 @@ package repository
 
 import (
 	"context"
-	"fmt"
+	"database/sql"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/gorm"
 
 	"booknest/internal/domain"
 )
 
-type bookRepositoryImpl struct {
-	db *pgxpool.Pool
+var allowedBookSortColumns = map[string]string{
+	domain.SortByCreatedAt: "b.created_at",
+	domain.SortByPrice:     "b.price",
+	domain.SortByName:      "b.name",
+	domain.SortByStock:     "b.available_stock",
 }
 
-func NewBookRepositoryImpl(db *pgxpool.Pool) domain.BookRepository {
-	return &bookRepositoryImpl{db: db}
+type bookRepository struct {
+	db  *gorm.DB
+	sql *sql.DB
 }
 
-func (r *bookRepositoryImpl) GetBooks(ctx context.Context) ([]domain.Book, error) {
-	tx := getTx(ctx)
+func NewBookRepository(db *gorm.DB, sql *sql.DB) domain.BookRepository {
+	return &bookRepository{db: db, sql: sql}
+}
 
-	query := `
-		SELECT id, title, author, price, stock, created_at, updated_at
-		FROM books
-		WHERE deleted_at IS NULL
-		ORDER BY created_at DESC
-	`
+// Use GORM to create a book
+func (r *bookRepository) Create(ctx context.Context, book *domain.Book) error {
+	return r.db.WithContext(ctx).Create(book).Error
+}
 
-	var rows pgx.Rows
-	var err error
-
-	if tx != nil {
-		rows, err = tx.Query(ctx, query)
-	} else {
-		rows, err = r.db.Query(ctx, query)
-	}
-
+func (r *bookRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Book, error) {
+	var book domain.Book
+	err := r.db.WithContext(ctx).
+		Preload("Publisher").
+		First(&book, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
+	return &book, nil
+}
+
+func (r *bookRepository) FilterByCriteria(ctx context.Context, filter domain.BookFilter, q domain.QueryOptions) ([]domain.Book, int64, error) {
+
+	// ---------- DATA QUERY ----------
+	dataQuery := buildBookBaseQuery()
+	dataQuery = applyBookFilters(dataQuery, filter)
+	dataQuery = applyBookSorting(dataQuery, q.Sort)
+
+	dataQuery = dataQuery.
+		OrderBy("b.created_at DESC").
+		Limit(q.Limit).
+		Offset(q.Offset).
+		PlaceholderFormat(sq.Dollar)
+
+	sqlQuery, args, err := dataQuery.ToSql()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	rows, err := r.sql.QueryContext(ctx, sqlQuery, args...)
+	if err != nil {
+		return nil, 0, err
+	}
 	defer rows.Close()
 
-	var result []domain.Book
+	books := make([]domain.Book, 0)
 	for rows.Next() {
-		var b domain.Book
-		if err := rows.Scan(
-			&b.ID, &b.Title, &b.Author, &b.Price, &b.Stock,
-			&b.CreatedAt, &b.UpdatedAt,
-		); err != nil {
-			return nil, err
+		var book domain.Book
+		err := rows.Scan(
+			&book.ID,
+			&book.Name,
+			&book.AuthorName,
+			&book.AvailableStock,
+			&book.ImageURL,
+			&book.IsActive,
+			&book.Description,
+			&book.ISBN,
+			&book.Price,
+			&book.DiscountPercentage,
+			&book.PublisherID,
+			&book.CreatedAt,
+			&book.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, err
 		}
-		result = append(result, b)
-	}
-	return result, nil
-}
-
-func (r *bookRepositoryImpl) GetBook(ctx context.Context, id uuid.UUID) (domain.Book, error) {
-	tx := getTx(ctx)
-
-	query := `
-		SELECT id, title, author, price, stock, created_at, updated_at
-		FROM books
-		WHERE id = $1 AND deleted_at IS NULL
-	`
-
-	var book domain.Book
-	var err error
-
-	if tx != nil {
-		err = tx.QueryRow(ctx, query, id).Scan(
-			&book.ID,
-			&book.Title,
-			&book.Author,
-			&book.Price,
-			&book.Stock,
-			&book.CreatedAt,
-			&book.UpdatedAt,
-		)
-	} else {
-		err = r.db.QueryRow(ctx, query, id).Scan(
-			&book.ID,
-			&book.Title,
-			&book.Author,
-			&book.Price,
-			&book.Stock,
-			&book.CreatedAt,
-			&book.UpdatedAt,
-		)
+		books = append(books, book)
 	}
 
-	return book, err
-}
+	// ---------- COUNT QUERY ----------
+	countQuery := sq.
+		Select("COUNT(DISTINCT b.id)").
+		From("books b").
+		Where("b.deleted_at IS NULL")
 
-func (r *bookRepositoryImpl) CreateBook(ctx context.Context, entity *domain.Book) (err error) {
-	// Check if the context has a transaction
-	tx := getTx(ctx)
+	countQuery = applyBookFilters(countQuery, filter).
+		PlaceholderFormat(sq.Dollar)
 
-	q := `
-		INSERT INTO books (title, author, price, stock, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, NOW(), NOW())
-		RETURNING id, created_at, updated_at
-	`
-
-	args := []interface{}{entity.Title, entity.Author, entity.Price, entity.Stock}
-
-	// Run the query
-	if tx != nil {
-		err = tx.QueryRow(ctx, q, args...).Scan(&entity.ID, &entity.CreatedAt, &entity.UpdatedAt)
-	} else {
-		err = r.db.QueryRow(ctx, q, args...).Scan(&entity.ID, &entity.CreatedAt, &entity.UpdatedAt)
-	}
-
-	return err
-}
-
-func (r *bookRepositoryImpl) UpdateBook(ctx context.Context, entity *domain.Book) (err error) {
-	tx := getTx(ctx)
-
-	q := `
-		UPDATE books SET title = $1, author=$2, price=$3, stock=$4,  updated_at=NOW()
-		WHERE id = $5
-		RETURNING updated_at
-	`
-
-	args := []interface{}{entity.Title, entity.Author, entity.Price, entity.Stock, entity.ID}
-
-	// Run the query
-	if tx != nil {
-		err = tx.QueryRow(ctx, q, args...).Scan(&entity.UpdatedAt)
-	} else {
-		err = r.db.QueryRow(ctx, q, args...).Scan(&entity.UpdatedAt)
-	}
-
-	return err
-}
-func (r *bookRepositoryImpl) DeleteBook(ctx context.Context, id uuid.UUID) error {
-	tx := getTx(ctx)
-
-	query := `
-		UPDATE books 
-		SET deleted_at = NOW(), updated_at = NOW()
-		WHERE id = $1 AND deleted_at IS NULL
-	`
-
-	args := []interface{}{id}
-
-	var cmdTag pgconn.CommandTag
-	var err error
-
-	if tx != nil {
-		cmdTag, err = tx.Exec(ctx, query, args...)
-	} else {
-		cmdTag, err = r.db.Exec(ctx, query, args...)
-	}
-
+	countSQL, countArgs, err := countQuery.ToSql()
 	if err != nil {
-		return err
+		return nil, 0, err
 	}
 
-	// Check if a row was actually updated (book existed)
-	if cmdTag.RowsAffected() == 0 {
-		return fmt.Errorf("book not found or already deleted")
+	var total int64
+	if err := r.sql.QueryRowContext(ctx, countSQL, countArgs...).Scan(&total); err != nil {
+		return nil, 0, err
 	}
 
-	return nil
+	return books, total, nil
+}
+
+func (r *bookRepository) List(ctx context.Context, limit, offset int) ([]domain.Book, error) {
+	var books []domain.Book
+	err := r.db.WithContext(ctx).
+		Limit(limit).
+		Offset(offset).
+		Order("created_at DESC").
+		Find(&books).Error
+	return books, err
+}
+
+func (r *bookRepository) Update(ctx context.Context, book *domain.Book) error {
+	return r.db.WithContext(ctx).Save(book).Error
+}
+
+func (r *bookRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return r.db.WithContext(ctx).Delete(&domain.Book{}, "id = ?", id).Error
+}
+
+func buildBookBaseQuery() sq.SelectBuilder {
+	return sq.Select(
+		"b.id",
+		"b.name",
+		"b.author_name",
+		"b.available_stock",
+		"b.image_url",
+		"b.is_active",
+		"b.description",
+		"b.isbn",
+		"b.price",
+		"b.discount_percentage",
+		"b.publisher_id",
+		"b.created_at",
+		"b.updated_at",
+	).
+		From("books b").
+		Where("b.deleted_at IS NULL")
+}
+
+func applyBookFilters(
+	q sq.SelectBuilder,
+	filter domain.BookFilter,
+) sq.SelectBuilder {
+
+	if filter.Search != nil {
+		search := "%" + *filter.Search + "%"
+		q = q.Where(
+			sq.Or{
+				sq.ILike{"b.name": search},
+				sq.ILike{"b.author_name": search},
+				sq.ILike{"b.isbn": search},
+			},
+		)
+	}
+
+	if filter.MinPrice != nil {
+		q = q.Where(sq.GtOrEq{"b.price": *filter.MinPrice})
+	}
+
+	if filter.MaxPrice != nil {
+		q = q.Where(sq.LtOrEq{"b.price": *filter.MaxPrice})
+	}
+
+	if filter.IsActive != nil {
+		q = q.Where(sq.Eq{"b.is_active": *filter.IsActive})
+	}
+
+	if filter.MinStock != nil {
+		q = q.Where(sq.GtOrEq{"b.available_stock": *filter.MinStock})
+	}
+
+	if len(filter.IDs) > 0 {
+		q = q.Where(sq.Eq{"b.id": filter.IDs})
+	}
+
+	if len(filter.PublisherIDs) > 0 {
+		q = q.Where(sq.Eq{"b.publisher_id": filter.PublisherIDs})
+	}
+
+	if len(filter.CategoryIDs) > 0  {
+		q = q.
+			Join("book_categories bc ON bc.book_id = b.id").
+			Where("bc.deleted_at IS NULL").
+			Where(sq.Eq{"bc.category_id": filter.CategoryIDs})
+	}
+
+	return q
+}
+
+func applyBookSorting(
+	q sq.SelectBuilder,
+	sort *domain.SortOptions,
+) sq.SelectBuilder {
+
+	// Default sort
+	if sort == nil {
+		return q.OrderBy("b.created_at DESC")
+	}
+
+	column, ok := allowedBookSortColumns[sort.Field]
+	if !ok {
+		return q.OrderBy("b.created_at DESC")
+	}
+
+	order := "ASC"
+	if sort.Order == domain.Desc {
+		order = "DESC"
+	}
+
+	return q.OrderBy(column + " " + order)
 }

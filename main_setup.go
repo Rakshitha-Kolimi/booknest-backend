@@ -10,12 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"booknest/internal/http/controller"
-	"booknest/internal/http/routes"
-	"booknest/internal/middleware"
-	"booknest/internal/repository"
-	"booknest/internal/service"
 )
 
 func useCORSMiddleware() gin.HandlerFunc {
@@ -35,40 +29,40 @@ func useCORSMiddleware() gin.HandlerFunc {
 }
 
 func SetupServer(dbpool *pgxpool.Pool) (*gin.Engine, error) {
-	bookRepo := repository.NewBookRepositoryImpl(dbpool)
-	bookService := service.NewBookServiceImpl(bookRepo)
-	bookController := controller.NewBookController(bookService)
+	// bookRepo := repository.NewBookRepositoryImpl(dbpool)
+	// bookService := service.NewBookServiceImpl(bookRepo)
+	// bookController := controller.NewBookController(bookService)
 
-	userRepo := repository.NewUserRepositoryImpl(dbpool)
-	userService := service.NewUserServiceImpl(userRepo)
-	userController := controller.NewUserController(userService)
+	// userRepo := repository.NewUserRepositoryImpl(dbpool)
+	// userService := service.NewUserServiceImpl(userRepo)
+	// userController := controller.NewUserController(userService)
 
 	r := gin.Default()
 	r.Use(useCORSMiddleware())
 
-	r.Use(gin.Recovery())
-	r.Use(middleware.LoggingMiddleware())
-	r.Use(middleware.ErrorHandler())
+	// r.Use(gin.Recovery())
+	// r.Use(middleware.LoggingMiddleware())
+	// r.Use(middleware.ErrorHandler())
 
-	r.GET(routes.HealthRoute, controller.GetHealth)
+	// r.GET(routes.HealthRoute, controller.GetHealth)
 
-	auth := r.Group("/")
-	auth.Use(middleware.JWTAuthMiddleware())
-	{
-		auth.POST(routes.BookRoute, bookController.AddBook)
-		auth.GET(routes.BooksRoute, bookController.GetBooks)
-		auth.GET(routes.BookIDRoute, bookController.GetBook)
-		auth.PUT(routes.BookIDRoute, bookController.UpdateBook)
-		auth.DELETE(routes.BookIDRoute, bookController.DeleteBook)
+	// auth := r.Group("/")
+	// auth.Use(middleware.JWTAuthMiddleware())
+	// {
+	// 	auth.POST(routes.BookRoute, bookController.AddBook)
+	// 	auth.GET(routes.BooksRoute, bookController.GetBooks)
+	// 	auth.GET(routes.BookIDRoute, bookController.GetBook)
+	// 	auth.PUT(routes.BookIDRoute, bookController.UpdateBook)
+	// 	auth.DELETE(routes.BookIDRoute, bookController.DeleteBook)
 
-		auth.GET(routes.UsersRoute, userController.GetUsers)
-		auth.GET(routes.UserRoute, userController.GetUserByID)
-		auth.DELETE(routes.UserRoute, userController.DeleteUser)
-	}
+	// 	auth.GET(routes.UsersRoute, userController.GetUsers)
+	// 	auth.GET(routes.UserRoute, userController.GetUserByID)
+	// 	auth.DELETE(routes.UserRoute, userController.DeleteUser)
+	// }
 
-	r.POST(routes.RegisterRoute, userController.RegisterUser)
-	r.POST(routes.LoginRoute, userController.LoginUser)
-	r.POST(routes.ForgotPassword, userController.ForgotPassword)
+	// r.POST(routes.RegisterRoute, userController.RegisterUser)
+	// r.POST(routes.LoginRoute, userController.LoginUser)
+	// r.POST(routes.ForgotPassword, userController.ForgotPassword)
 
 	return r, nil
 }

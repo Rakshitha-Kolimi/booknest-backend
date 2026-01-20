@@ -57,12 +57,14 @@ type UserRepository interface {
 }
 
 type UserService interface {
-	Register(in UserInput) error
-	VerifyEmail()
-	VerifyMobile()
-	Login(in LoginInput) (token string, err error)
-	ForgotPassword(in ForgotPasswordInput) (err error)
-	ResetPassword() error
+	Register(ctx context.Context, in UserInput) error
+	Login(ctx context.Context, in LoginInput) (token string, err error)
+	// Logout(ctx context.Context, userID uuid.UUID) error
+
+	ResetPassword(ctx context.Context, userID uuid.UUID, newPassword string) error
+
+	FindUser(ctx context.Context, id uuid.UUID) (User, error)
+	DeleteUser(ctx context.Context, id uuid.UUID) error
 }
 
 type UserController interface {

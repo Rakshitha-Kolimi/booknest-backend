@@ -51,7 +51,7 @@ func SetupServer(dbpool *pgxpool.Pool) (*gin.Engine, error) {
 
 	r := gin.Default()
 	r.Use(useCORSMiddleware(map[string]bool{
-		"http://localhost:3000":   true,
+		"http://localhost:3000": true,
 	}))
 
 	// r.Use(gin.Recovery())
@@ -88,6 +88,7 @@ func StartHTTPServer(r *gin.Engine) {
 		Handler: r,
 	}
 
+	// If we don’t run it in a goroutine, shutdown logic will never execute
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server error: %v", err)
@@ -97,15 +98,30 @@ func StartHTTPServer(r *gin.Engine) {
 	log.Println("🚀 BookNest backend started on http://localhost:8080")
 
 	// graceful shutdown
+	/*
+		* Creates a channel to receive OS signals and Listens for:
+			- Ctrl + C
+			- Docker stop
+			- Pod termination
+			<-quit blocks until signal arrives
+	*/
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 
 	log.Println("Shutting down server...")
 
+	// Gives active requests 5 seconds to finish
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	/*
+	Why server shut down: 
+	1. Stops accepting new requests
+	2. Waits for in-flight requests
+	3. Closes idle connections
+	4. Respects the timeout context
+	*/
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("Server forced to shutdown: %v", err)
 	}

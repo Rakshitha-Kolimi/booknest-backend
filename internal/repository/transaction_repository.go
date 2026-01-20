@@ -2,39 +2,25 @@ package repository
 
 import (
 	"context"
-	"database/sql"
+
+	"booknest/internal/domain"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-type TxKeyType string
-
-const TxKey TxKeyType = "BookNest-Transactioner"
-
-func getTx(ctx context.Context) pgx.Tx {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if txVal := ctx.Value(TxKey); txVal != nil {
-		return txVal.(pgx.Tx)
-	}
-	return nil
-}
 
 func queryRowWithTx(
 	ctx context.Context,
-	db *sql.DB,
+	pool *pgxpool.Pool,
 	query string,
 	args ...any,
-) *sql.Row {
+) pgx.Row {
 
-	if ctx == nil {
-		ctx = context.Background()
+	if txVal := ctx.Value(domain.TxKey); txVal != nil {
+		if tx, ok := txVal.(pgx.Tx); ok {
+			return tx.QueryRow(ctx, query, args...)
+		}
 	}
 
-	if txVal := ctx.Value(TxKey); txVal != nil {
-		return txVal.(*sql.Tx).QueryRowContext(ctx, query, args...)
-	}
-
-	return db.QueryRowContext(ctx, query, args...)
+	return pool.QueryRow(ctx, query, args...)
 }

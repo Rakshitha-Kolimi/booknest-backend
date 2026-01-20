@@ -2,23 +2,23 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"gorm.io/gorm"
 
 	"booknest/internal/domain"
 )
 
 type userRepo struct {
-	db   *sql.DB
+	db   *pgxpool.Pool
 	gorm *gorm.DB
 	sb   squirrel.StatementBuilderType
 }
 
-func NewUserRepo(db *sql.DB, gormDB *gorm.DB) domain.UserRepository {
+func NewUserRepo(db *pgxpool.Pool, gormDB *gorm.DB) domain.UserRepository {
 	return &userRepo{
 		db:   db,
 		gorm: gormDB,

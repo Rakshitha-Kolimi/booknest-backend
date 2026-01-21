@@ -37,8 +37,11 @@ func (s *userService) Register(
 	ctx context.Context,
 	in domain.UserInput,
 ) error {
+	var emailToken *domain.VerificationToken
+	var mobileOTP string
 
-	return util.WithTransaction(ctx, s.db, func(txCtx context.Context) error {
+	// Use transaction for user registration
+	err := util.WithTransaction(ctx, s.db, func(txCtx context.Context) error {
 		// Create an user domain
 		user := &domain.User{
 			ID:        uuid.New(),
@@ -61,16 +64,48 @@ func (s *userService) Register(
 		if err != nil {
 			return err
 		}
+		// Create email verification token
 		token := &domain.VerificationToken{
 			UserID:    user.ID,
 			Type:      domain.VerificationEmail,
 			TokenHash: s.generateTokenHash(verificationCode),
-			ExpiresAt: time.Now().Add(24 * time.Hour),
+			ExpiresAt: time.Now().Add(24 * time.Hour), // 24 hours expiry
 		}
 
 		// Add token to the database
-		return s.vtr.Create(txCtx, token)
+		err = s.vtr.Create(txCtx, token)
+		if err != nil {
+			return err
+		}
+		// Assign to outer variable for sending email after transaction
+		emailToken = token
+
+		// Create mobile OTP
+		mobileOTP = s.generateOTP(6)
+		mobileToken := &domain.VerificationToken{
+			UserID:    user.ID,
+			Type:      domain.VerificationMobile,
+			TokenHash: s.generateTokenHash(verificationCode),
+			ExpiresAt: time.Now().Add(5 * time.Minute), // 5 minutes expiry
+		}
+
+		// Add mobile token to the database
+		return s.vtr.Create(txCtx, mobileToken)
 	})
+
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		s.sendEmailVerification(in.Email, *emailToken)
+	}()
+
+	go func() {
+		s.sendMobileVerification(in.Mobile, mobileOTP)
+	}()
+
+	return err
 }
 
 func (s *userService) Login(
@@ -128,6 +163,142 @@ func (s *userService) ResetPassword(
 		// Update the user
 		return s.r.Update(txCtx, &user)
 	})
+}
+
+func (s *userService) VerifyEmail(
+	ctx context.Context,
+	rawToken string,
+) error {
+	return s.verifyToken(ctx, rawToken, domain.VerificationEmail)
+}
+
+func (s *userService) VerifyMobile(
+	ctx context.Context,
+	otp string,
+) error {
+	return s.verifyToken(ctx, otp, domain.VerificationMobile)
+}
+
+func (s *userService) ResendEmailVerification(
+	ctx context.Context,
+	userID uuid.UUID,
+) error {
+
+	var emailToken *domain.VerificationToken
+	var email string
+
+	err := util.WithTransaction(ctx, s.db, func(txCtx context.Context) error {
+		// Fetch user
+		user, err := s.r.FindByID(txCtx, userID)
+		if err != nil {
+			return err
+		}
+
+		// Check if already verified
+		if user.EmailVerified {
+			return errors.New("email already verified")
+		}
+
+		// Invalidate old tokens
+		if err := s.vtr.InvalidateByUserAndType(
+			txCtx,
+			user.ID,
+			domain.VerificationEmail,
+		); err != nil {
+			return err
+		}
+
+		// Create new verification token
+		rawToken, err := s.generateRawToken()
+		if err != nil {
+			return err
+		}
+
+		// Create email verification token
+		token := &domain.VerificationToken{
+			UserID:    user.ID,
+			Type:      domain.VerificationEmail,
+			TokenHash: s.generateTokenHash(rawToken),
+			ExpiresAt: time.Now().Add(24 * time.Hour),
+		}
+
+		// Add token to the database
+		if err := s.vtr.Create(txCtx, token); err != nil {
+			return err
+		}
+
+		// Assign to outer variables for sending email after transaction
+		emailToken = token
+		email = user.Email
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// Send verification email
+	go s.sendEmailVerification(email, *emailToken)
+	return nil
+}
+
+func (s *userService) ResendMobileOTP(
+	ctx context.Context,
+	userID uuid.UUID,
+) error {
+
+	var otp string
+	var mobile string
+
+	err := util.WithTransaction(ctx, s.db, func(txCtx context.Context) error {
+		// Fetch user
+		user, err := s.r.FindByID(txCtx, userID)
+		if err != nil {
+			return err
+		}
+
+		// Check if already verified
+		if user.MobileVerified {
+			return errors.New("mobile already verified")
+		}
+
+		// Invalidate old OTPs
+		if err := s.vtr.InvalidateByUserAndType(
+			txCtx,
+			user.ID,
+			domain.VerificationMobile, // or LoginOTP if you haven't split yet
+		); err != nil {
+			return err
+		}
+
+		// Generate new OTP
+		otp = s.generateOTP(6)
+
+		// Create mobile verification token
+		token := &domain.VerificationToken{
+			UserID:    user.ID,
+			Type:      domain.VerificationMobile,
+			TokenHash: s.generateTokenHash(otp),
+			ExpiresAt: time.Now().Add(5 * time.Minute),
+		}
+
+		// Add token to the database
+		if err := s.vtr.Create(txCtx, token); err != nil {
+			return err
+		}
+
+		// Assign to outer variable for sending SMS after transaction
+		mobile = user.Mobile
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	// Send mobile OTP
+	go s.sendMobileVerification(mobile, otp)
+	return nil
 }
 
 func (s *userService) DeleteUser(

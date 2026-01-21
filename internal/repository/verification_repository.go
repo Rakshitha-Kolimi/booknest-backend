@@ -26,6 +26,32 @@ func NewVerificationRepo(db *pgxpool.Pool, gormDB *gorm.DB) domain.VerificationT
 	}
 }
 
+func (r *verificationTokenRepo) FindByHashAndType(
+	ctx context.Context,
+	tokenHash string,
+	tokenType domain.VerificationTokenType,
+) (*domain.VerificationToken, error) {
+
+	var token domain.VerificationToken
+
+	err := r.gorm.
+		WithContext(ctx).
+		Where(
+			"token_hash = ? AND type = ? AND is_used = false AND expires_at > NOW()",
+			tokenHash,
+			tokenType,
+		).
+		Order("created_at DESC").
+		First(&token).
+		Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &token, nil
+}
+
 func (r *verificationTokenRepo) FindByUserIDAndType(
 	ctx context.Context,
 	userID uuid.UUID,
@@ -111,6 +137,31 @@ func (r *verificationTokenRepo) Update(
 
 	row := queryRowWithTx(ctx, r.db, query, args...)
 	return row.Scan(&token.UpdatedAt)
+}
+
+func (r *verificationTokenRepo) InvalidateByUserAndType(
+	ctx context.Context,
+	userID uuid.UUID,
+	tokenType domain.VerificationTokenType,
+) error {
+
+	query, args, err := r.sb.
+		Update("verification_tokens").
+		Set("is_used", true).
+		Set("used_at", squirrel.Expr("NOW()")).
+		Set("updated_at", squirrel.Expr("NOW()")).
+		Where(squirrel.Eq{
+			"user_id": userID,
+			"type":    tokenType,
+			"is_used": false,
+		}).
+		ToSql()
+
+	if err != nil {
+		return err
+	}
+
+	return execWithTx(ctx, r.db, query, args...)
 }
 
 func (r *verificationTokenRepo) Delete(ctx context.Context, id uuid.UUID) error {

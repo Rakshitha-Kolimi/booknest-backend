@@ -13,7 +13,7 @@ import (
 )
 
 type userRepo struct {
-	db   *pgxpool.Pool
+	db   domain.DBExecer
 	gorm *gorm.DB
 	sb   squirrel.StatementBuilderType
 }

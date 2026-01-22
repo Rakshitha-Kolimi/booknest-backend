@@ -4,14 +4,13 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"booknest/internal/domain"
 )
 
 func queryRowWithTx(
 	ctx context.Context,
-	pool *pgxpool.Pool,
+	pool domain.DBExecer,
 	query string,
 	args ...any,
 ) pgx.Row {
@@ -29,7 +28,7 @@ func queryRowWithTx(
 
 func execWithTx(
 	ctx context.Context,
-	pool *pgxpool.Pool,
+	pool domain.DBExecer,
 	query string,
 	args ...any,
 ) error {

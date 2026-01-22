@@ -58,7 +58,9 @@ func SetupServer(dbpool *pgxpool.Pool) (*gin.Engine, error) {
 	// r.Use(middleware.LoggingMiddleware())
 	// r.Use(middleware.ErrorHandler())
 
-	// r.GET(routes.HealthRoute, controller.GetHealth)
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
 
 	// auth := r.Group("/")
 	// auth.Use(middleware.JWTAuthMiddleware())
@@ -116,11 +118,11 @@ func StartHTTPServer(r *gin.Engine) {
 	defer cancel()
 
 	/*
-	Why server shut down: 
-	1. Stops accepting new requests
-	2. Waits for in-flight requests
-	3. Closes idle connections
-	4. Respects the timeout context
+		Why server shut down:
+		1. Stops accepting new requests
+		2. Waits for in-flight requests
+		3. Closes idle connections
+		4. Respects the timeout context
 	*/
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatalf("Server forced to shutdown: %v", err)

@@ -2,8 +2,9 @@
 export
 
 # Migration path
-MIGRATE=migrate -path internal/http/database/migrations -database $(DB_URL)
 MIGRATIONS_DIR=internal/http/database/migrations
+MIGRATE=migrate -path $(MIGRATIONS_DIR) -database $(DB_URL)
+
 
 # Commands
 migrate-up:
@@ -23,4 +24,4 @@ migrate-version:
 	$(MIGRATE) version
 
 migrate-new:
-	migrate create -ext sql -dir internal/http/database/migrations $(name)
+	migrate create -ext sql -dir $(MIGRATIONS_DIR)  $(name)

@@ -1,5 +1,19 @@
 package domain
 
+import (
+	"context"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+)
+
 // Transaction key constants
 type TxKeyType string
+
 const TxKey TxKeyType = "BookNest-Transactioner"
+
+// DBExecer defines the interface for database operations -> to maintain abstraction over pgxpool.Pool and pgx.Tx and also to facilitate testing
+type DBExecer interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+}

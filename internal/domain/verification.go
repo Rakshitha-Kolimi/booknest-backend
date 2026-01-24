@@ -25,7 +25,6 @@ type VerificationToken struct {
 	IsUsed    bool                  `gorm:"default:false" db:"is_used" json:"is_used"`
 
 	UsedAt   *time.Time        `db:"used_at" json:"used_at"`
-	Metadata map[string]string `gorm:"type:jsonb" json:"metadata" db:"metadata"`
 
 	BaseEntity
 }

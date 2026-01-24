@@ -13,7 +13,7 @@ import (
 )
 
 type verificationTokenRepo struct {
-	db   *pgxpool.Pool
+	db   domain.DBExecer
 	gorm *gorm.DB
 	sb   squirrel.StatementBuilderType
 }
@@ -37,9 +37,10 @@ func (r *verificationTokenRepo) FindByHashAndType(
 	err := r.gorm.
 		WithContext(ctx).
 		Where(
-			"token_hash = ? AND type = ? AND is_used = false AND expires_at > NOW()",
+			"token_hash = ? AND type = ? AND is_used = false AND expires_at > ?",
 			tokenHash,
 			tokenType,
+			time.Now(),
 		).
 		Order("created_at DESC").
 		First(&token).
@@ -91,7 +92,6 @@ func (r *verificationTokenRepo) Create(
 			"token_hash",
 			"expires_at",
 			"is_used",
-			"metadata",
 		).
 		Values(
 			token.UserID,
@@ -99,7 +99,6 @@ func (r *verificationTokenRepo) Create(
 			token.TokenHash,
 			token.ExpiresAt,
 			token.IsUsed,
-			token.Metadata,
 		).
 		Suffix("RETURNING id, created_at, updated_at").
 		ToSql()
@@ -126,7 +125,6 @@ func (r *verificationTokenRepo) Update(
 		Set("is_used", token.IsUsed).
 		Set("used_at", token.UsedAt).
 		Set("expires_at", token.ExpiresAt).
-		Set("metadata", token.Metadata).
 		Set("updated_at", squirrel.Expr("NOW()")).
 		Where(squirrel.Eq{"id": token.ID}).
 		Suffix("RETURNING updated_at").

@@ -143,7 +143,7 @@ func (r *userRepo) Delete(ctx context.Context, id uuid.UUID) error {
 		UPDATE users
 		SET deleted_at = NOW()
 		WHERE id = $1
-		RETURNING deleted_at
+		RETURNING deleted_at;
 	`
 
 	row := queryRowWithTx(ctx, r.db, query, id)

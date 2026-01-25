@@ -10,6 +10,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	"booknest/internal/http/controller"
+	"booknest/internal/http/database"
+	"booknest/internal/middleware"
+	"booknest/internal/repository"
+	"booknest/internal/service/user_service"
 )
 
 func useCORSMiddleware(allowedOrigins map[string]bool) gin.HandlerFunc {
@@ -45,22 +53,34 @@ func SetupServer(dbpool *pgxpool.Pool) (*gin.Engine, error) {
 	// bookService := service.NewBookServiceImpl(bookRepo)
 	// bookController := controller.NewBookController(bookService)
 
-	// userRepo := repository.NewUserRepositoryImpl(dbpool)
-	// userService := service.NewUserServiceImpl(userRepo)
-	// userController := controller.NewUserController(userService)
+	gormdb, err := database.ConnectGORM()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	userRepo := repository.NewUserRepo(dbpool, gormdb)
+	vtRepo := repository.NewVerificationRepo(dbpool, gormdb)
+	userService := user_service.NewUserService(dbpool, userRepo, vtRepo)
+	userController := controller.NewUserController(userService)
 
 	r := gin.Default()
 	r.Use(useCORSMiddleware(map[string]bool{
 		"http://localhost:3000": true,
 	}))
-
-	// r.Use(gin.Recovery())
-	// r.Use(middleware.LoggingMiddleware())
-	// r.Use(middleware.ErrorHandler())
+	r.Use(gin.Recovery())
+	r.Use(middleware.LoggingMiddleware())
+	r.Use(middleware.ErrorHandler())
+	r.GET(
+		"/swagger/*any",
+		middleware.SwaggerAuthMiddleware(),
+		ginSwagger.WrapHandler(swaggerFiles.Handler),
+	)
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+
+	userController.RegisterRoutes(r)
 
 	// auth := r.Group("/")
 	// auth.Use(middleware.JWTAuthMiddleware())

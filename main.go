@@ -5,9 +5,25 @@ import (
 
 	"github.com/joho/godotenv"
 
+	_ "booknest/docs"
 	"booknest/internal/http/database"
 )
 
+// @title           BookNest API
+// @version         1.0
+// @description     Online Bookstore backend (BookNest)
+// @termsOfService  http://booknest.com/terms/
+
+// @contact.name   Rakshitha
+// @contact.email  kolimirakshitha@gmail.com
+
+// @license.name  MIT
+// @host          localhost:8080
+// @BasePath      /api/v1
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	// Load the .env file
 	err := godotenv.Load()

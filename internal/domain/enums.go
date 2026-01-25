@@ -1,13 +1,13 @@
 package domain
 
-type UserRole string
+type UserRole string // @name UserRole
 
 const (
 	UserRoleUser  UserRole = "USER"
 	UserRoleAdmin UserRole = "ADMIN"
 )
 
-type PaymentStatus string
+type PaymentStatus string // @name PaymentStatus
 
 const (
 	PaymentPending  PaymentStatus = "PENDING"

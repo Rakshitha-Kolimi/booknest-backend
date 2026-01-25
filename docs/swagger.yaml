@@ -1,0 +1,460 @@
+basePath: /api/v1
+definitions:
+  ForgotPasswordInput:
+    properties:
+      email:
+        type: string
+      mobile:
+        type: string
+    type: object
+  LoginInput:
+    properties:
+      email:
+        type: string
+      mobile:
+        type: string
+      password:
+        type: string
+    required:
+    - password
+    type: object
+  User:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      email:
+        type: string
+      email_verified:
+        type: boolean
+      first_name:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      last_login:
+        type: string
+      last_name:
+        type: string
+      mobile:
+        type: string
+      mobile_verified:
+        type: boolean
+      role:
+        $ref: '#/definitions/UserRole'
+      updated_at:
+        type: string
+    type: object
+  UserInput:
+    properties:
+      email:
+        type: string
+      first_name:
+        minLength: 3
+        type: string
+      last_name:
+        type: string
+      mobile:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      role:
+        $ref: '#/definitions/UserRole'
+    required:
+    - email
+    - first_name
+    - last_name
+    - mobile
+    - password
+    - role
+    type: object
+  UserRole:
+    enum:
+    - USER
+    - ADMIN
+    type: string
+    x-enum-varnames:
+    - UserRoleUser
+    - UserRoleAdmin
+host: localhost:8080
+info:
+  contact:
+    email: kolimirakshitha@gmail.com
+    name: Rakshitha
+  description: Online Bookstore backend (BookNest)
+  license:
+    name: MIT
+  termsOfService: http://booknest.com/terms/
+  title: BookNest API
+  version: "1.0"
+paths:
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Sends password reset link or OTP to email/mobile
+      parameters:
+      - description: Forgot password input
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/ForgotPasswordInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Forgot password
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login using email or mobile and password
+      parameters:
+      - description: Login credentials
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/LoginInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login user
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account and sends email & mobile verification
+      parameters:
+      - description: User registration input
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/UserInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - Auth
+  /auth/resend-email-verification:
+    post:
+      description: Resends verification email if not verified
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Resend email verification
+      tags:
+      - Verification
+  /auth/resend-mobile-otp:
+    post:
+      description: Resends mobile OTP if not verified
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Resend mobile OTP
+      tags:
+      - Verification
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Reset password for authenticated user
+      parameters:
+      - description: New password
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Reset password
+      tags:
+      - Auth
+  /auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verifies email using token
+      parameters:
+      - description: Verification token
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify email
+      tags:
+      - Verification
+  /auth/verify-mobile:
+    post:
+      consumes:
+      - application/json
+      description: Verifies mobile using OTP
+      parameters:
+      - description: OTP
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify mobile
+      tags:
+      - Verification
+  /users/{id}:
+    delete:
+      description: User can delete only their own account
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete user account
+      tags:
+      - Users
+    get:
+      description: Fetch user details by user ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
+      tags:
+      - Users
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -32,20 +32,20 @@ type UserInput struct {
 	Mobile    string   `json:"mobile" binding:"required,mobile"`
 	Password  string   `json:"password" binding:"required,min=6"`
 	Role      UserRole `json:"role" binding:"required"`
-}
+} // @name UserInput
 
 // ForgotPasswordInput is used for forgot password
 type ForgotPasswordInput struct {
 	Email  string `json:"email"`
 	Mobile string `json:"mobile"`
-}
+} // @name ForgotPasswordInput
 
 // LoginInput is used for login
 type LoginInput struct {
 	Email    string `json:"email"`
 	Mobile   string `json:"mobile"`
 	Password string `json:"password" binding:"required"`
-}
+} // @name LoginInput
 
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error

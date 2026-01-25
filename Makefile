@@ -25,3 +25,7 @@ migrate-version:
 
 migrate-new:
 	migrate create -ext sql -dir $(MIGRATIONS_DIR)  $(name)
+
+swagger:
+	swag init --parseDependency --parseInternal
+

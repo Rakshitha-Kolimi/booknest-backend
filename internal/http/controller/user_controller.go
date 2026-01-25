@@ -43,8 +43,19 @@ func (c *userController) RegisterRoutes(r *gin.Engine) {
 	}
 }
 
-// Register handles user registration
+// Register godoc
+// @Summary      Register a new user
+// @Description  Creates a new user account and sends email & mobile verification
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        payload  body  domain.UserInput  true  "User registration input"
+// @Success      201  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /auth/register [post]
 func (c *userController) Register(ctx *gin.Context) {
+
 	var input domain.UserInput
 
 	if err := ctx.ShouldBindJSON(&input); err != nil {
@@ -62,7 +73,17 @@ func (c *userController) Register(ctx *gin.Context) {
 	})
 }
 
-// Login handles user login
+// Login godoc
+// @Summary      Login user
+// @Description  Login using email or mobile and password
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        payload  body  domain.LoginInput  true  "Login credentials"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Router       /auth/login [post]
 func (c *userController) Login(ctx *gin.Context) {
 	var input domain.LoginInput
 
@@ -89,7 +110,17 @@ func (c *userController) Login(ctx *gin.Context) {
 	})
 }
 
-// GetUser retrieves a user by ID
+// GetUser godoc
+// @Summary      Get user by ID
+// @Description  Fetch user details by user ID
+// @Tags         Users
+// @Produce      json
+// @Param        id   path  string  true  "User ID"
+// @Success      200  {object}  domain.User
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /users/{id} [get]
 func (c *userController) GetUser(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
@@ -106,7 +137,19 @@ func (c *userController) GetUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, user)
 }
 
-// DeleteUser deletes a user account
+// DeleteUser godoc
+// @Summary      Delete user account
+// @Description  User can delete only their own account
+// @Tags         Users
+// @Produce      json
+// @Param        id   path  string  true  "User ID"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      403  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /users/{id} [delete]
 func (c *userController) DeleteUser(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
@@ -136,7 +179,16 @@ func (c *userController) DeleteUser(ctx *gin.Context) {
 	})
 }
 
-// ForgotPassword initiates password reset process
+// ForgotPassword godoc
+// @Summary      Forgot password
+// @Description  Sends password reset link or OTP to email/mobile
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        payload  body  domain.ForgotPasswordInput  true  "Forgot password input"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Router       /auth/forgot-password [post]
 func (c *userController) ForgotPassword(ctx *gin.Context) {
 	var input domain.ForgotPasswordInput
 
@@ -156,7 +208,16 @@ func (c *userController) ForgotPassword(ctx *gin.Context) {
 	})
 }
 
-// VerifyEmail verifies user email with token
+// VerifyEmail godoc
+// @Summary      Verify email
+// @Description  Verifies email using token
+// @Tags         Verification
+// @Accept       json
+// @Produce      json
+// @Param        payload  body  map[string]string  true  "Verification token"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Router       /auth/verify-email [post]
 func (c *userController) VerifyEmail(ctx *gin.Context) {
 	var input struct {
 		Token string `json:"token" binding:"required"`
@@ -177,7 +238,16 @@ func (c *userController) VerifyEmail(ctx *gin.Context) {
 	})
 }
 
-// VerifyMobile verifies user mobile with OTP
+// VerifyMobile godoc
+// @Summary      Verify mobile
+// @Description  Verifies mobile using OTP
+// @Tags         Verification
+// @Accept       json
+// @Produce      json
+// @Param        payload  body  map[string]string  true  "OTP"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Router       /auth/verify-mobile [post]
 func (c *userController) VerifyMobile(ctx *gin.Context) {
 	var input struct {
 		OTP string `json:"otp" binding:"required"`
@@ -198,7 +268,17 @@ func (c *userController) VerifyMobile(ctx *gin.Context) {
 	})
 }
 
-// ResendEmailVerification resends email verification token
+// ResendEmailVerification godoc
+// @Summary      Resend email verification
+// @Description  Resends verification email if not verified
+// @Tags         Verification
+// @Produce      json
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /auth/resend-email-verification [post]
 func (c *userController) ResendEmailVerification(ctx *gin.Context) {
 	userIDFromCtx, exists := ctx.Get("userID")
 	if !exists {
@@ -226,7 +306,17 @@ func (c *userController) ResendEmailVerification(ctx *gin.Context) {
 	})
 }
 
-// ResendMobileOTP resends mobile OTP
+// ResendMobileOTP godoc
+// @Summary      Resend mobile OTP
+// @Description  Resends mobile OTP if not verified
+// @Tags         Verification
+// @Produce      json
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /auth/resend-mobile-otp [post]
 func (c *userController) ResendMobileOTP(ctx *gin.Context) {
 	userIDFromCtx, exists := ctx.Get("userID")
 	if !exists {
@@ -254,7 +344,19 @@ func (c *userController) ResendMobileOTP(ctx *gin.Context) {
 	})
 }
 
-// ResetPassword resets user password
+// ResetPassword godoc
+// @Summary      Reset password
+// @Description  Reset password for authenticated user
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        payload  body  map[string]string  true  "New password"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /auth/reset-password [post]
 func (c *userController) ResetPassword(ctx *gin.Context) {
 	userIDFromCtx, exists := ctx.Get("userID")
 	if !exists {

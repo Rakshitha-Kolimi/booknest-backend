@@ -35,11 +35,11 @@ func (c *userController) RegisterRoutes(r *gin.Engine) {
 	{
 		protected.GET(routes.UserRoute, c.GetUser)
 		protected.DELETE(routes.UserRoute, c.DeleteUser)
-		protected.POST("/verify-email", c.VerifyEmail)
-		protected.POST("/verify-mobile", c.VerifyMobile)
-		protected.POST("/resend-email-verification", c.ResendEmailVerification)
-		protected.POST("/resend-mobile-otp", c.ResendMobileOTP)
-		protected.POST("/reset-password", c.ResetPassword)
+		protected.POST(routes.VerifyEmailRoute, c.VerifyEmail)
+		protected.POST(routes.VerifyMobileRoute, c.VerifyMobile)
+		protected.POST(routes.ResendEmailRoute, c.ResendEmailVerification)
+		protected.POST(routes.ResendMobileOTPRoute, c.ResendMobileOTP)
+		protected.POST(routes.ResetPasswordRoute, c.ResetPassword)
 	}
 }
 

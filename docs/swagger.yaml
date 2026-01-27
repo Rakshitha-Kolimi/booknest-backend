@@ -18,6 +18,71 @@ definitions:
     required:
     - password
     type: object
+  Publisher:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      legal_name:
+        type: string
+      mobile:
+        type: string
+      state:
+        type: string
+      trading_name:
+        type: string
+      updated_at:
+        type: string
+      zipcode:
+        type: string
+    type: object
+  PublisherInput:
+    properties:
+      address:
+        minLength: 3
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      email:
+        type: string
+      legal_name:
+        minLength: 3
+        type: string
+      mobile:
+        type: string
+      state:
+        type: string
+      trading_name:
+        minLength: 3
+        type: string
+      zipcode:
+        type: string
+    required:
+    - address
+    - city
+    - country
+    - email
+    - legal_name
+    - mobile
+    - state
+    - trading_name
+    - zipcode
+    type: object
   User:
     properties:
       created_at:
@@ -373,6 +438,200 @@ paths:
       summary: Verify mobile
       tags:
       - Verification
+  /publishers:
+    post:
+      consumes:
+      - application/json
+      description: Create a new publisher
+      parameters:
+      - description: Publisher input
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/PublisherInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Publisher'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create publisher
+      tags:
+      - Publishers
+  /publishers/{id}:
+    delete:
+      description: Soft delete publisher
+      parameters:
+      - description: Publisher ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete publisher
+      tags:
+      - Publishers
+    get:
+      description: Fetch publisher by ID
+      parameters:
+      - description: Publisher ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Publisher'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get publisher
+      tags:
+      - Publishers
+    put:
+      consumes:
+      - application/json
+      description: Update publisher details
+      parameters:
+      - description: Publisher ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Publisher input
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/PublisherInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Publisher'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update publisher
+      tags:
+      - Publishers
+  /publishers/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Enable or disable a publisher
+      parameters:
+      - description: Publisher ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Active flag
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: boolean
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Activate or deactivate publisher
+      tags:
+      - Publishers
   /users/{id}:
     delete:
       description: User can delete only their own account

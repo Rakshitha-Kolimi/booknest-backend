@@ -15,5 +15,6 @@ const TxKey TxKeyType = "BookNest-Transactioner"
 // DBExecer defines the interface for database operations -> to maintain abstraction over pgxpool.Pool and pgx.Tx and also to facilitate testing
 type DBExecer interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 }

@@ -21,6 +21,16 @@ const (
 	ResendEmailRoute     = "/resend-email-verification"
 	ResendMobileOTPRoute = "/resend-mobile-otp"
 	ResetPasswordRoute   = "/reset-password"
+
+	CartRoute      = "/cart"
+	CartItemsRoute = "/cart/items"
+	CartItemRoute  = "/cart/items/:book_id"
+	CartClearRoute = "/cart/clear"
+
+	OrdersRoute        = "/orders"
+	OrderCheckoutRoute = "/orders/checkout"
+	OrderConfirmRoute  = "/orders/confirm"
+	AdminOrdersRoute   = "/admin/orders"
 )
 
 // ====================

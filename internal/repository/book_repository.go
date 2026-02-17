@@ -36,6 +36,7 @@ func (r *bookRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Bo
 	var book domain.Book
 	err := r.db.WithContext(ctx).
 		Preload("Publisher").
+		Preload("Categories").
 		First(&book, "id = ?", id).Error
 	if err != nil {
 		return nil, err

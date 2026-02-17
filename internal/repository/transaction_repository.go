@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"booknest/internal/domain"
 )
@@ -44,4 +45,38 @@ func execWithTx(
 	// Otherwise, use the connection pool to execute the query
 	_, err := pool.Exec(ctx, query, args...)
 	return err
+}
+
+func execWithTxTag(
+	ctx context.Context,
+	pool domain.DBExecer,
+	query string,
+	args ...any,
+) (pgconn.CommandTag, error) {
+	// Check if there's an active transaction in the context
+	if txVal := ctx.Value(domain.TxKey); txVal != nil {
+		if tx, ok := txVal.(pgx.Tx); ok {
+			return tx.Exec(ctx, query, args...)
+		}
+	}
+
+	// Otherwise, use the connection pool to execute the query
+	return pool.Exec(ctx, query, args...)
+}
+
+func queryWithTx(
+	ctx context.Context,
+	pool domain.DBExecer,
+	query string,
+	args ...any,
+) (pgx.Rows, error) {
+	// Check if there's an active transaction in the context
+	if txVal := ctx.Value(domain.TxKey); txVal != nil {
+		if tx, ok := txVal.(pgx.Tx); ok {
+			return tx.Query(ctx, query, args...)
+		}
+	}
+
+	// Otherwise, use the connection pool to execute the query
+	return pool.Query(ctx, query, args...)
 }

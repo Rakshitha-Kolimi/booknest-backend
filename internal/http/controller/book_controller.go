@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"booknest/internal/domain"
+	"booknest/internal/middleware"
 )
 
 type bookController struct {
@@ -19,15 +20,32 @@ func NewBookController(service domain.BookService) domain.BookController {
 }
 
 func (c *bookController) RegisterRoutes(r *gin.Engine) {
-	books := r.Group("/books")
+	public := r.Group("/books")
 	{
-		books.POST("", c.createBook)
-		books.POST("/filter", c.filterBooks)
-		books.GET("/:id", c.getBook)
-		books.GET("", c.listBooks)
+		public.POST("/filter", c.filterBooks)
+		public.GET("/:id", c.getBook)
+		public.GET("", c.listBooks)
+	}
+
+	admin := r.Group("/books")
+	admin.Use(middleware.JWTAuthMiddleware(), middleware.RequireAdmin())
+	{
+		admin.POST("", c.createBook)
 	}
 }
 
+// createBook godoc
+// @Summary      Create book
+// @Description  Creates a new book (admin only)
+// @Tags         Books
+// @Accept       json
+// @Produce      json
+// @Param        payload  body  domain.BookInput  true  "Book input"
+// @Success      201  {object}  domain.Book
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /books [post]
 func (c *bookController) createBook(ctx *gin.Context) {
 	var input domain.BookInput
 	if err := ctx.ShouldBindJSON(&input); err != nil {
@@ -44,6 +62,16 @@ func (c *bookController) createBook(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, book)
 }
 
+// getBook godoc
+// @Summary      Get book by ID
+// @Description  Fetches a single book by its ID
+// @Tags         Books
+// @Produce      json
+// @Param        id  path  string  true  "Book ID"
+// @Success      200  {object}  domain.Book
+// @Failure      400  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Router       /books/{id} [get]
 func (c *bookController) getBook(ctx *gin.Context) {
 	id, err := uuid.Parse(ctx.Param("id"))
 	if err != nil {
@@ -60,6 +88,14 @@ func (c *bookController) getBook(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, book)
 }
 
+// listBooks godoc
+// @Summary      List books
+// @Description  Returns a list of books
+// @Tags         Books
+// @Produce      json
+// @Success      200  {array}  domain.Book
+// @Failure      500  {object}  map[string]string
+// @Router       /books [get]
 func (c *bookController) listBooks(ctx *gin.Context) {
 	limit := 10
 	offset := 0
@@ -73,6 +109,20 @@ func (c *bookController) listBooks(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, books)
 }
 
+// filterBooks godoc
+// @Summary      Filter books
+// @Description  Filters books by criteria and pagination
+// @Tags         Books
+// @Accept       json
+// @Produce      json
+// @Param        search  query  string  false  "Search by name, author, or ISBN"
+// @Param        limit   query  int     false  "Result limit"
+// @Param        offset  query  int     false  "Result offset"
+// @Param        payload  body  domain.BookFilter  false  "Book filter payload"
+// @Success      200  {object}  domain.BookSearchResult
+// @Failure      400  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /books/filter [post]
 func (c *bookController) filterBooks(ctx *gin.Context) {
 	var filter domain.BookFilter
 

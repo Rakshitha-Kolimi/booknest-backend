@@ -17,6 +17,10 @@ import (
 	"booknest/internal/http/database"
 	"booknest/internal/middleware"
 	"booknest/internal/repository"
+	"booknest/internal/service/book_service"
+	"booknest/internal/service/cart_service"
+	"booknest/internal/service/order_service"
+	"booknest/internal/service/publisher_service"
 	"booknest/internal/service/user_service"
 )
 
@@ -49,11 +53,12 @@ func useCORSMiddleware(allowedOrigins map[string]bool) gin.HandlerFunc {
 }
 
 func SetupServer(dbpool *pgxpool.Pool) (*gin.Engine, error) {
-	// bookRepo := repository.NewBookRepositoryImpl(dbpool)
-	// bookService := service.NewBookServiceImpl(bookRepo)
-	// bookController := controller.NewBookController(bookService)
-
 	gormdb, err := database.ConnectGORM()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	sqlDB, err := gormdb.DB()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,9 +68,26 @@ func SetupServer(dbpool *pgxpool.Pool) (*gin.Engine, error) {
 	userService := user_service.NewUserService(dbpool, userRepo, vtRepo)
 	userController := controller.NewUserController(userService)
 
+	bookRepo := repository.NewBookRepository(gormdb, sqlDB)
+	bookService := book_service.NewBookService(bookRepo, gormdb)
+	bookController := controller.NewBookController(bookService)
+
+	publisherRepo := repository.NewPublisherRepo(dbpool, gormdb)
+	publisherService := publisher_service.NewPublisherService(dbpool, publisherRepo)
+	publisherController := controller.NewPublisherController(publisherService)
+
+	cartRepo := repository.NewCartRepo(dbpool)
+	cartService := cart_service.NewCartService(dbpool, cartRepo, bookRepo)
+	cartController := controller.NewCartController(cartService)
+
+	orderRepo := repository.NewOrderRepo(dbpool)
+	orderService := order_service.NewOrderService(dbpool, orderRepo, cartRepo)
+	orderController := controller.NewOrderController(orderService)
+
 	r := gin.Default()
 	r.Use(useCORSMiddleware(map[string]bool{
 		"http://localhost:3000": true,
+		"http://localhost:5173": true,
 	}))
 	r.Use(gin.Recovery())
 	r.Use(middleware.LoggingMiddleware())
@@ -81,24 +103,10 @@ func SetupServer(dbpool *pgxpool.Pool) (*gin.Engine, error) {
 	})
 
 	userController.RegisterRoutes(r)
-
-	// auth := r.Group("/")
-	// auth.Use(middleware.JWTAuthMiddleware())
-	// {
-	// 	auth.POST(routes.BookRoute, bookController.AddBook)
-	// 	auth.GET(routes.BooksRoute, bookController.GetBooks)
-	// 	auth.GET(routes.BookIDRoute, bookController.GetBook)
-	// 	auth.PUT(routes.BookIDRoute, bookController.UpdateBook)
-	// 	auth.DELETE(routes.BookIDRoute, bookController.DeleteBook)
-
-	// 	auth.GET(routes.UsersRoute, userController.GetUsers)
-	// 	auth.GET(routes.UserRoute, userController.GetUserByID)
-	// 	auth.DELETE(routes.UserRoute, userController.DeleteUser)
-	// }
-
-	// r.POST(routes.RegisterRoute, userController.RegisterUser)
-	// r.POST(routes.LoginRoute, userController.LoginUser)
-	// r.POST(routes.ForgotPassword, userController.ForgotPassword)
+	bookController.RegisterRoutes(r)
+	publisherController.RegisterRoutes(r)
+	cartController.RegisterRoutes(r)
+	orderController.RegisterRoutes(r)
 
 	return r, nil
 }

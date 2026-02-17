@@ -158,13 +158,13 @@ func (c *userController) DeleteUser(ctx *gin.Context) {
 	}
 
 	// Verify that the user can only delete their own account
-	userIDFromCtx, exists := ctx.Get("userID")
-	if !exists {
+	userIDFromCtx, err := getUserID(ctx)
+	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	if userIDFromCtx.(uuid.UUID) != id {
+	if userIDFromCtx != id {
 		ctx.JSON(http.StatusForbidden, gin.H{"error": "you can only delete your own account"})
 		return
 	}
@@ -280,19 +280,13 @@ func (c *userController) VerifyMobile(ctx *gin.Context) {
 // @Security     BearerAuth
 // @Router       /auth/resend-email-verification [post]
 func (c *userController) ResendEmailVerification(ctx *gin.Context) {
-	userIDFromCtx, exists := ctx.Get("userID")
-	if !exists {
+	userIDFromCtx, err := getUserID(ctx)
+	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	userID, ok := userIDFromCtx.(uuid.UUID)
-	if !ok {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user id format"})
-		return
-	}
-
-	if err := c.service.ResendEmailVerification(ctx, userID); err != nil {
+	if err := c.service.ResendEmailVerification(ctx, userIDFromCtx); err != nil {
 		if errors.Is(err, errors.New("email already verified")) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "email already verified"})
 		} else {
@@ -318,19 +312,13 @@ func (c *userController) ResendEmailVerification(ctx *gin.Context) {
 // @Security     BearerAuth
 // @Router       /auth/resend-mobile-otp [post]
 func (c *userController) ResendMobileOTP(ctx *gin.Context) {
-	userIDFromCtx, exists := ctx.Get("userID")
-	if !exists {
+	userIDFromCtx, err := getUserID(ctx)
+	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
-	userID, ok := userIDFromCtx.(uuid.UUID)
-	if !ok {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user id format"})
-		return
-	}
-
-	if err := c.service.ResendMobileOTP(ctx, userID); err != nil {
+	if err := c.service.ResendMobileOTP(ctx, userIDFromCtx); err != nil {
 		if errors.Is(err, errors.New("mobile already verified")) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "mobile already verified"})
 		} else {
@@ -358,15 +346,9 @@ func (c *userController) ResendMobileOTP(ctx *gin.Context) {
 // @Security     BearerAuth
 // @Router       /auth/reset-password [post]
 func (c *userController) ResetPassword(ctx *gin.Context) {
-	userIDFromCtx, exists := ctx.Get("userID")
-	if !exists {
+	userIDFromCtx, err := getUserID(ctx)
+	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
-
-	userID, ok := userIDFromCtx.(uuid.UUID)
-	if !ok {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user id format"})
 		return
 	}
 
@@ -379,7 +361,7 @@ func (c *userController) ResetPassword(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.service.ResetPassword(ctx, userID, input.NewPassword); err != nil {
+	if err := c.service.ResetPassword(ctx, userIDFromCtx, input.NewPassword); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

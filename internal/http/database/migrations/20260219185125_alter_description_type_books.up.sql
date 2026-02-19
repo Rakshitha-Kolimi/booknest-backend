@@ -1,0 +1,2 @@
+ALTER TABLE books
+ALTER COLUMN description TYPE TEXT;

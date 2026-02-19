@@ -29,15 +29,14 @@ func (r *cartRepo) GetOrCreateCart(
 	var cart domain.Cart
 
 	query := `
-		INSERT INTO carts (id, user_id, created_at, updated_at)
-		VALUES ($1, $2, NOW(), NOW())
-		ON CONFLICT (user_id) DO UPDATE
-		SET updated_at = NOW()
-		RETURNING id, user_id, created_at, updated_at;
+		INSERT INTO carts (id, user_id)
+		VALUES ($1, $2)
+		ON CONFLICT (user_id) DO NOTHING
+		RETURNING id, user_id;
 	`
 
 	row := queryRowWithTx(ctx, r.db, query, uuid.New(), userID)
-	err := row.Scan(&cart.ID, &cart.UserID, &cart.CreatedAt, &cart.UpdatedAt)
+	err := row.Scan(&cart.ID, &cart.UserID)
 	return cart, err
 }
 

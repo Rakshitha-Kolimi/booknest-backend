@@ -35,6 +35,7 @@ func (r *bookRepository) Create(ctx context.Context, book *domain.Book) error {
 func (r *bookRepository) FindByID(ctx context.Context, id uuid.UUID) (*domain.Book, error) {
 	var book domain.Book
 	err := r.db.WithContext(ctx).
+		Preload("Author").
 		Preload("Publisher").
 		Preload("Categories").
 		First(&book, "id = ?", id).Error
@@ -75,6 +76,7 @@ func (r *bookRepository) FilterByCriteria(ctx context.Context, filter domain.Boo
 			&book.ID,
 			&book.Name,
 			&book.AuthorName,
+			&book.AuthorID,
 			&book.AvailableStock,
 			&book.ImageURL,
 			&book.IsActive,
@@ -137,6 +139,7 @@ func buildBookBaseQuery() sq.SelectBuilder {
 		"b.id",
 		"b.name",
 		"b.author_name",
+		"b.author_id",
 		"b.available_stock",
 		"b.image_url",
 		"b.is_active",
@@ -188,11 +191,15 @@ func applyBookFilters(
 		q = q.Where(sq.Eq{"b.id": filter.IDs})
 	}
 
+	if len(filter.AuthorIDs) > 0 {
+		q = q.Where(sq.Eq{"b.author_id": filter.AuthorIDs})
+	}
+
 	if len(filter.PublisherIDs) > 0 {
 		q = q.Where(sq.Eq{"b.publisher_id": filter.PublisherIDs})
 	}
 
-	if len(filter.CategoryIDs) > 0  {
+	if len(filter.CategoryIDs) > 0 {
 		q = q.
 			Join("book_categories bc ON bc.book_id = b.id").
 			Where("bc.deleted_at IS NULL").

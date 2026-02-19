@@ -17,6 +17,7 @@ import (
 	"booknest/internal/http/database"
 	"booknest/internal/middleware"
 	"booknest/internal/repository"
+	"booknest/internal/service/author_service"
 	"booknest/internal/service/book_service"
 	"booknest/internal/service/cart_service"
 	"booknest/internal/service/order_service"
@@ -72,6 +73,10 @@ func SetupServer(dbpool *pgxpool.Pool) (*gin.Engine, error) {
 	bookService := book_service.NewBookService(bookRepo, gormdb)
 	bookController := controller.NewBookController(bookService)
 
+	authorRepo := repository.NewAuthorRepo(gormdb)
+	authorService := author_service.NewAuthorService(authorRepo)
+	authorController := controller.NewAuthorController(authorService)
+
 	publisherRepo := repository.NewPublisherRepo(dbpool, gormdb)
 	publisherService := publisher_service.NewPublisherService(dbpool, publisherRepo)
 	publisherController := controller.NewPublisherController(publisherService)
@@ -104,6 +109,7 @@ func SetupServer(dbpool *pgxpool.Pool) (*gin.Engine, error) {
 
 	userController.RegisterRoutes(r)
 	bookController.RegisterRoutes(r)
+	authorController.RegisterRoutes(r)
 	publisherController.RegisterRoutes(r)
 	cartController.RegisterRoutes(r)
 	orderController.RegisterRoutes(r)

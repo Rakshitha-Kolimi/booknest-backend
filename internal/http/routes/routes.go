@@ -31,6 +31,9 @@ const (
 	OrderCheckoutRoute = "/orders/checkout"
 	OrderConfirmRoute  = "/orders/confirm"
 	AdminOrdersRoute   = "/admin/orders"
+
+	AuthorsRoute    = "/authors"
+	AuthorByIDRoute = "/authors/:id"
 )
 
 // ====================

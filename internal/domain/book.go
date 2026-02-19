@@ -20,6 +20,8 @@ type Book struct {
 	ID                 uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
 	Name               string     `gorm:"not null" json:"name"`
 	AuthorName         string     `gorm:"not null" json:"author_name"`
+	AuthorID           uuid.UUID  `gorm:"type:uuid;not null;index" json:"author_id"`
+	Author             Author     `gorm:"foreignKey:AuthorID" json:"author,omitempty"`
 	AvailableStock     int        `gorm:"check:available_stock >= 0" json:"available_stock"`
 	ImageURL           *string    `json:"image_url,omitempty"`
 	IsActive           bool       `gorm:"default:false" json:"is_active"`
@@ -50,6 +52,7 @@ type BookCategory struct {
 type BookInput struct {
 	Name               string      `json:"name" binding:"required"`
 	AuthorName         string      `json:"author_name" binding:"required"`
+	AuthorID           *uuid.UUID  `json:"author_id,omitempty"`
 	AvailableStock     int         `json:"available_stock"`
 	ImageURL           *string     `json:"image_url,omitempty"`
 	IsActive           bool        `json:"is_active"`
@@ -67,6 +70,7 @@ type BookFilter struct {
 	MaxPrice     *float64
 	IsActive     *bool
 	IDs          []uuid.UUID
+	AuthorIDs    []uuid.UUID
 	PublisherIDs []uuid.UUID
 	CategoryIDs  []uuid.UUID
 	MinStock     *int

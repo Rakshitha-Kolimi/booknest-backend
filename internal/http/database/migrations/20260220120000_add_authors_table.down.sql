@@ -1,0 +1,12 @@
+ALTER TABLE books
+DROP CONSTRAINT IF EXISTS fk_books_author;
+
+DROP INDEX IF EXISTS idx_books_author_id;
+
+ALTER TABLE books
+DROP COLUMN IF EXISTS author_id;
+
+ALTER TABLE books
+ADD COLUMN IF NOT EXISTS author_name VARCHAR(255) DEFAULT '';
+
+DROP TABLE IF EXISTS authors;

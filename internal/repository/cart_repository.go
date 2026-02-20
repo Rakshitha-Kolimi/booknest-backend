@@ -29,10 +29,19 @@ func (r *cartRepo) GetOrCreateCart(
 	var cart domain.Cart
 
 	query := `
-		INSERT INTO carts (id, user_id)
-		VALUES ($1, $2)
-		ON CONFLICT (user_id) DO NOTHING
-		RETURNING id, user_id;
+		WITH inserted AS (
+			INSERT INTO carts (id, user_id)
+			VALUES ($1, $2)
+			ON CONFLICT (user_id) DO NOTHING
+			RETURNING id, user_id
+		)
+		SELECT id, user_id
+		FROM inserted
+		UNION ALL
+		SELECT id, user_id
+		FROM carts
+		WHERE user_id = $2
+		LIMIT 1;
 	`
 
 	row := queryRowWithTx(ctx, r.db, query, uuid.New(), userID)
@@ -48,7 +57,7 @@ func (r *cartRepo) GetCartItems(
 		SELECT
 			ci.book_id,
 			b.name,
-			b.author_name,
+			a.name AS author_name,
 			b.image_url,
 			(b.price - (b.price * b.discount_percentage / 100)) AS unit_price,
 			ci.count,
@@ -56,6 +65,7 @@ func (r *cartRepo) GetCartItems(
 		FROM carts c
 		JOIN cart_items ci ON ci.cart_id = c.id AND ci.deleted_at IS NULL
 		JOIN books b ON b.id = ci.book_id AND b.deleted_at IS NULL
+		JOIN authors a ON a.id = b.author_id
 		WHERE c.user_id = $1
 		ORDER BY ci.created_at DESC;
 	`

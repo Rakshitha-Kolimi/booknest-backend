@@ -24,12 +24,16 @@ type AuthorRepository interface {
 	FindByName(ctx context.Context, name string) (Author, error)
 	List(ctx context.Context, limit, offset int) ([]Author, error)
 	Create(ctx context.Context, author *Author) error
+	Update(ctx context.Context, author *Author) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type AuthorService interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*Author, error)
 	List(ctx context.Context, limit, offset int) ([]Author, error)
 	Create(ctx context.Context, input AuthorInput) (*Author, error)
+	Update(ctx context.Context, id uuid.UUID, input AuthorInput) (*Author, error)
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type AuthorController interface {

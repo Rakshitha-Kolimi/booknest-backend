@@ -32,6 +32,8 @@ func (c *authorController) RegisterRoutes(r *gin.Engine) {
 	admin.Use(middleware.JWTAuthMiddleware(), middleware.RequireAdmin())
 	{
 		admin.POST(routes.AuthorsRoute, c.Create)
+		admin.PUT(routes.AuthorByIDRoute, c.Update)
+		admin.DELETE(routes.AuthorByIDRoute, c.Delete)
 	}
 }
 
@@ -119,4 +121,41 @@ func (c *authorController) GetByID(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, author)
+}
+
+func (c *authorController) Update(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid author id"})
+		return
+	}
+
+	var input domain.AuthorInput
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	author, err := c.service.Update(ctx, id, input)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, author)
+}
+
+func (c *authorController) Delete(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid author id"})
+		return
+	}
+
+	if err := c.service.Delete(ctx, id); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Author deleted successfully"})
 }

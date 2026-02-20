@@ -27,7 +27,6 @@ func (s *bookService) CreateBook(ctx context.Context, input domain.BookInput) (*
 	book := &domain.Book{
 		ID:         uuid.New(),
 		Name:       input.Name,
-		AuthorName: input.AuthorName,
 	}
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -37,7 +36,6 @@ func (s *bookService) CreateBook(ctx context.Context, input domain.BookInput) (*
 			if err := tx.First(&author, "id = ?", authorID).Error; err != nil {
 				return err
 			}
-			book.AuthorName = author.Name
 		} else {
 			var author domain.Author
 			err := tx.Where("LOWER(name) = LOWER(?)", input.AuthorName).
@@ -120,4 +118,72 @@ func (s *bookService) FilterByCriteria(
 		Limit:  q.Limit,
 		Offset: q.Offset,
 	}, nil
+}
+
+func (s *bookService) UpdateBook(
+	ctx context.Context,
+	id uuid.UUID,
+	input domain.BookInput,
+) (*domain.Book, error) {
+	book, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	authorID := book.AuthorID
+
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if input.AuthorID != nil && *input.AuthorID != uuid.Nil {
+			authorID = *input.AuthorID
+			var author domain.Author
+			if err := tx.First(&author, "id = ?", authorID).Error; err != nil {
+				return err
+			}
+		} else {
+			var author domain.Author
+			err := tx.Where("LOWER(name) = LOWER(?)", input.AuthorName).
+				First(&author).Error
+			if err != nil {
+				if err != gorm.ErrRecordNotFound {
+					return err
+				}
+
+				author = domain.Author{
+					ID:   uuid.New(),
+					Name: input.AuthorName,
+				}
+				if err := tx.Create(&author).Error; err != nil {
+					return err
+				}
+			}
+
+			authorID = author.ID
+		}
+
+		book.Name = input.Name
+		book.AuthorID = authorID
+		book.AvailableStock = input.AvailableStock
+		book.ImageURL = input.ImageURL
+		book.IsActive = input.IsActive
+		book.Description = input.Description
+		book.ISBN = input.ISBN
+		book.Price = input.Price
+		book.DiscountPercentage = input.DiscountPercentage
+		book.PublisherID = input.PublisherID
+
+		if err := tx.Save(book).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return book, nil
+}
+
+func (s *bookService) DeleteBook(ctx context.Context, id uuid.UUID) error {
+	return s.repo.Delete(ctx, id)
 }

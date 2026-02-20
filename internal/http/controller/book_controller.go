@@ -31,6 +31,8 @@ func (c *bookController) RegisterRoutes(r *gin.Engine) {
 	admin.Use(middleware.JWTAuthMiddleware(), middleware.RequireAdmin())
 	{
 		admin.POST("", c.createBook)
+		admin.PUT("/:id", c.updateBook)
+		admin.DELETE("/:id", c.deleteBook)
 	}
 }
 
@@ -157,4 +159,41 @@ func (c *bookController) filterBooks(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, result)
+}
+
+func (c *bookController) updateBook(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	var input domain.BookInput
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	book, err := c.service.UpdateBook(ctx, id, input)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, book)
+}
+
+func (c *bookController) deleteBook(ctx *gin.Context) {
+	id, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	if err := c.service.DeleteBook(ctx, id); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Book deleted successfully"})
 }

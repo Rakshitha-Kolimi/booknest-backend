@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -25,12 +26,33 @@ func (c *publisherController) RegisterRoutes(r *gin.Engine) {
 	protected := r.Group("")
 	protected.Use(middleware.JWTAuthMiddleware())
 	{
+		protected.GET(routes.PublisherRoute, c.List)
 		protected.POST(routes.PublisherRoute, c.Create)
 		protected.GET(routes.PublisherByIDRoute, c.GetByID)
 		protected.PUT(routes.PublisherByIDRoute, c.Update)
 		protected.PATCH(routes.PublisherStatusRoute, c.SetActive)
 		protected.DELETE(routes.PublisherByIDRoute, c.Delete)
 	}
+}
+
+func (c *publisherController) List(ctx *gin.Context) {
+	limit := 20
+	offset := 0
+
+	if v := ctx.Query("limit"); v != "" {
+		limit, _ = strconv.Atoi(v)
+	}
+	if v := ctx.Query("offset"); v != "" {
+		offset, _ = strconv.Atoi(v)
+	}
+
+	publishers, err := c.service.List(ctx, limit, offset)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, publishers)
 }
 
 // GetByID godoc

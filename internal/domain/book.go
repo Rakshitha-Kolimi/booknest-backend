@@ -19,7 +19,6 @@ const (
 type Book struct {
 	ID                 uuid.UUID  `gorm:"type:uuid;primaryKey" json:"id"`
 	Name               string     `gorm:"not null" json:"name"`
-	AuthorName         string     `gorm:"not null" json:"author_name"`
 	AuthorID           uuid.UUID  `gorm:"type:uuid;not null;index" json:"author_id"`
 	Author             Author     `gorm:"foreignKey:AuthorID" json:"author,omitempty"`
 	AvailableStock     int        `gorm:"check:available_stock >= 0" json:"available_stock"`
@@ -97,6 +96,8 @@ type BookService interface {
 	GetBook(ctx context.Context, id uuid.UUID) (*Book, error)
 	ListBooks(ctx context.Context, limit, offset int) ([]Book, error)
 	FilterByCriteria(ctx context.Context, filter BookFilter, q QueryOptions) (*BookSearchResult, error)
+	UpdateBook(ctx context.Context, id uuid.UUID, input BookInput) (*Book, error)
+	DeleteBook(ctx context.Context, id uuid.UUID) error
 }
 
 type BookController interface {

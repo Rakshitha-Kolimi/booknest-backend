@@ -69,3 +69,38 @@ func (s *authorService) Create(
 
 	return author, nil
 }
+
+func (s *authorService) Update(
+	ctx context.Context,
+	id uuid.UUID,
+	input domain.AuthorInput,
+) (*domain.Author, error) {
+	name := strings.TrimSpace(input.Name)
+	if name == "" {
+		return nil, errors.New("author name is required")
+	}
+
+	author, err := s.r.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	existing, err := s.r.FindByName(ctx, name)
+	if err == nil && existing.ID != author.ID {
+		return nil, errors.New("author name already exists")
+	}
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+
+	author.Name = name
+	if err := s.r.Update(ctx, &author); err != nil {
+		return nil, err
+	}
+
+	return &author, nil
+}
+
+func (s *authorService) Delete(ctx context.Context, id uuid.UUID) error {
+	return s.r.Delete(ctx, id)
+}

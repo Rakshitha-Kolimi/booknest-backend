@@ -15,11 +15,19 @@ import (
 )
 
 type MockPublisherService struct {
+	ListFunc      func(ctx context.Context, limit, offset int) ([]domain.Publisher, error)
 	CreateFunc    func(ctx context.Context, in domain.PublisherInput) (*domain.Publisher, error)
 	UpdateFunc    func(ctx context.Context, id uuid.UUID, in domain.PublisherInput) (*domain.Publisher, error)
 	FindFunc      func(ctx context.Context, id uuid.UUID) (*domain.Publisher, error)
 	SetActiveFunc func(ctx context.Context, id uuid.UUID, active bool) error
 	DeleteFunc    func(ctx context.Context, id uuid.UUID) error
+}
+
+func (m *MockPublisherService) List(ctx context.Context, limit, offset int) ([]domain.Publisher, error) {
+	if m.ListFunc != nil {
+		return m.ListFunc(ctx, limit, offset)
+	}
+	return []domain.Publisher{}, nil
 }
 
 func (m *MockPublisherService) Create(ctx context.Context, in domain.PublisherInput) (*domain.Publisher, error) {

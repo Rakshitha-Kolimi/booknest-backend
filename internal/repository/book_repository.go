@@ -75,7 +75,6 @@ func (r *bookRepository) FilterByCriteria(ctx context.Context, filter domain.Boo
 		err := rows.Scan(
 			&book.ID,
 			&book.Name,
-			&book.AuthorName,
 			&book.AuthorID,
 			&book.AvailableStock,
 			&book.ImageURL,

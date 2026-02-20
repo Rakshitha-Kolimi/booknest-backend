@@ -42,6 +42,20 @@ func (r *publisherRepo) FindByID(
 	return publisher, err
 }
 
+func (r *publisherRepo) List(
+	ctx context.Context,
+	limit, offset int,
+) ([]domain.Publisher, error) {
+	var publishers []domain.Publisher
+	err := r.gorm.WithContext(ctx).
+		Where("deleted_at IS NULL").
+		Limit(limit).
+		Offset(offset).
+		Order("created_at DESC").
+		Find(&publishers).Error
+	return publishers, err
+}
+
 func (r *publisherRepo) Create(
 	ctx context.Context,
 	publisher *domain.Publisher,

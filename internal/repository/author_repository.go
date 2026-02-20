@@ -58,3 +58,11 @@ func (r *authorRepo) List(ctx context.Context, limit, offset int) ([]domain.Auth
 func (r *authorRepo) Create(ctx context.Context, author *domain.Author) error {
 	return r.gorm.WithContext(ctx).Create(author).Error
 }
+
+func (r *authorRepo) Update(ctx context.Context, author *domain.Author) error {
+	return r.gorm.WithContext(ctx).Save(author).Error
+}
+
+func (r *authorRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	return r.gorm.WithContext(ctx).Delete(&domain.Author{}, "id = ?", id).Error
+}

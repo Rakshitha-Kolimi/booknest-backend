@@ -28,6 +28,7 @@ func (c *userController) RegisterRoutes(r *gin.Engine) {
 		auth.POST(routes.RegisterRoute, c.Register)
 		auth.POST(routes.LoginRoute, c.Login)
 		auth.POST(routes.ForgotPassword, c.ForgotPassword)
+		auth.POST(routes.ResetPasswordByToken, c.ResetPasswordWithToken)
 	}
 
 	protected := r.Group("")
@@ -202,9 +203,48 @@ func (c *userController) ForgotPassword(ctx *gin.Context) {
 		return
 	}
 
-	// TODO: Implement forgot password logic with sending reset link/OTP
+	resetToken, err := c.service.ForgotPassword(ctx, input)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "Password reset link has been sent to your email/mobile",
+		"message":     "If the account exists, a password reset link has been sent",
+		"reset_token": resetToken,
+	})
+}
+
+// ResetPasswordWithToken godoc
+// @Summary      Reset password with token
+// @Description  Reset password using forgot-password reset token
+// @Tags         Auth
+// @Accept       json
+// @Produce      json
+// @Param        payload  body  map[string]string  true  "Token and new password"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  map[string]string
+// @Failure      401  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Router       /auth/reset-password/confirm [post]
+func (c *userController) ResetPasswordWithToken(ctx *gin.Context) {
+	var input struct {
+		Token       string `json:"token" binding:"required"`
+		NewPassword string `json:"new_password" binding:"required,min=6"`
+	}
+
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := c.service.ResetPasswordWithToken(ctx, input.Token, input.NewPassword); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Password reset successfully",
 	})
 }
 

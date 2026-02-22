@@ -21,6 +21,7 @@ const (
 	ResendEmailRoute     = "/resend-email-verification"
 	ResendMobileOTPRoute = "/resend-mobile-otp"
 	ResetPasswordRoute   = "/reset-password"
+	ResetPasswordByToken = "/reset-password/confirm"
 
 	CartRoute      = "/cart"
 	CartItemsRoute = "/cart/items"

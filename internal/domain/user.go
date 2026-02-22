@@ -60,7 +60,9 @@ type UserService interface {
 	FindUser(ctx context.Context, id uuid.UUID) (User, error)
 	Register(ctx context.Context, in UserInput) error
 	Login(ctx context.Context, in LoginInput) (token string, err error)
+	ForgotPassword(ctx context.Context, in ForgotPasswordInput) (string, error)
 	ResetPassword(ctx context.Context, userID uuid.UUID, newPassword string) error
+	ResetPasswordWithToken(ctx context.Context, rawToken, newPassword string) error
 	VerifyEmail(ctx context.Context, rawToken string) error
 	VerifyMobile(ctx context.Context, otp string) error
 	ResendEmailVerification(ctx context.Context, userID uuid.UUID) error

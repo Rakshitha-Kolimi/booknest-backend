@@ -85,7 +85,7 @@ func (s *userService) Register(
 		mobileToken := &domain.VerificationToken{
 			UserID:    user.ID,
 			Type:      domain.VerificationMobile,
-			TokenHash: s.generateTokenHash(verificationCode),
+			TokenHash: s.generateTokenHash(mobileOTP),
 			ExpiresAt: time.Now().Add(5 * time.Minute), // 5 minutes expiry
 		}
 
@@ -144,6 +144,51 @@ func (s *userService) Login(
 	return s.generateJWT(user)
 }
 
+func (s *userService) ForgotPassword(
+	ctx context.Context,
+	in domain.ForgotPasswordInput,
+) (string, error) {
+	var rawToken string
+
+	err := util.WithTransaction(ctx, s.db, func(txCtx context.Context) error {
+		var user domain.User
+		var err error
+
+		if in.Email != "" {
+			user, err = s.r.FindByEmail(txCtx, in.Email)
+		} else {
+			user, err = s.r.FindByMobile(txCtx, in.Mobile)
+		}
+		if err != nil {
+			// Avoid user enumeration in forgot-password flows.
+			return nil
+		}
+
+		if err := s.vtr.InvalidateByUserAndType(txCtx, user.ID, domain.PasswordReset); err != nil {
+			return err
+		}
+
+		rawToken, err = s.generateRawToken()
+		if err != nil {
+			return err
+		}
+
+		token := &domain.VerificationToken{
+			UserID:    user.ID,
+			Type:      domain.PasswordReset,
+			TokenHash: s.generateTokenHash(rawToken),
+			ExpiresAt: time.Now().Add(30 * time.Minute),
+		}
+
+		return s.vtr.Create(txCtx, token)
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return rawToken, nil
+}
+
 func (s *userService) ResetPassword(
 	ctx context.Context,
 	userID uuid.UUID,
@@ -162,6 +207,43 @@ func (s *userService) ResetPassword(
 
 		// Update the user
 		return s.r.Update(txCtx, &user)
+	})
+}
+
+func (s *userService) ResetPasswordWithToken(
+	ctx context.Context,
+	rawToken string,
+	newPassword string,
+) error {
+	tokenHash := s.generateTokenHash(rawToken)
+
+	return util.WithTransaction(ctx, s.db, func(txCtx context.Context) error {
+		token, err := s.vtr.FindByHashAndType(txCtx, tokenHash, domain.PasswordReset)
+		if err != nil {
+			return errors.New("invalid or expired token")
+		}
+		if token.IsUsed || time.Now().After(token.ExpiresAt) {
+			return errors.New("invalid or expired token")
+		}
+
+		user, err := s.r.FindByID(txCtx, token.UserID)
+		if err != nil {
+			return err
+		}
+
+		user.Password = s.hashPassword(newPassword)
+		if err := s.r.Update(txCtx, &user); err != nil {
+			return err
+		}
+
+		now := time.Now()
+		token.IsUsed = true
+		token.UsedAt = &now
+		if err := s.vtr.Update(txCtx, token); err != nil {
+			return err
+		}
+
+		return s.vtr.InvalidateByUserAndType(txCtx, user.ID, domain.PasswordReset)
 	})
 }
 

@@ -83,6 +83,10 @@ func (s userService) generateJWT(user domain.User) (string, error) {
 	// Generate JWT token for the user
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
+		// Backward-compatible env key used in older local setups.
+		secret = os.Getenv("JWT_AUTH_SECRET")
+	}
+	if secret == "" {
 		secret = "booknest_secret" // fallback for local dev
 	}
 

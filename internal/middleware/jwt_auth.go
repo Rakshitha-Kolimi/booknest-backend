@@ -29,6 +29,10 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 		// Parse and validate token
 		secret := os.Getenv("JWT_SECRET")
 		if secret == "" {
+			// Backward-compatible env key used in older local setups.
+			secret = os.Getenv("JWT_AUTH_SECRET")
+		}
+		if secret == "" {
 			secret = "booknest_secret" // fallback for local dev
 		}
 

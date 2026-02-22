@@ -103,3 +103,67 @@ func TestOrderListPassThrough(t *testing.T) {
 		t.Fatalf("unexpected ListAllOrders result: %+v, err=%v", allOrders, err)
 	}
 }
+
+func TestValidateOrderForPaymentConfirmation(t *testing.T) {
+	paid := domain.PaymentPaid
+	pending := domain.PaymentPending
+
+	tests := []struct {
+		name    string
+		order   domain.Order
+		wantErr bool
+	}{
+		{
+			name: "allows pending order with pending payment",
+			order: domain.Order{
+				Status:        domain.OrderPending,
+				PaymentStatus: &pending,
+			},
+			wantErr: false,
+		},
+		{
+			name: "allows pending order with nil payment status",
+			order: domain.Order{
+				Status:        domain.OrderPending,
+				PaymentStatus: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "rejects completed order",
+			order: domain.Order{
+				Status:        domain.OrderCompleted,
+				PaymentStatus: &pending,
+			},
+			wantErr: true,
+		},
+		{
+			name: "rejects cancelled order",
+			order: domain.Order{
+				Status:        domain.OrderCancelled,
+				PaymentStatus: &pending,
+			},
+			wantErr: true,
+		},
+		{
+			name: "rejects pending order with paid status",
+			order: domain.Order{
+				Status:        domain.OrderPending,
+				PaymentStatus: &paid,
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateOrderForPaymentConfirmation(tc.order)
+			if tc.wantErr && err == nil {
+				t.Fatalf("expected error but got nil")
+			}
+			if !tc.wantErr && err != nil {
+				t.Fatalf("expected nil error but got %v", err)
+			}
+		})
+	}
+}

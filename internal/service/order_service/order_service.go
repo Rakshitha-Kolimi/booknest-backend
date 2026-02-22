@@ -125,6 +125,9 @@ func (s *orderService) ConfirmPayment(
 		if order.UserID != userID {
 			return errors.New("not authorized to confirm this order")
 		}
+		if err := validateOrderForPaymentConfirmation(order); err != nil {
+			return err
+		}
 
 		paymentMethod := domain.PaymentCOD
 		if order.PaymentMethod != nil {
@@ -189,6 +192,18 @@ func (s *orderService) ConfirmPayment(
 	})
 
 	return orderView, err
+}
+
+func validateOrderForPaymentConfirmation(order domain.Order) error {
+	if order.Status != domain.OrderPending {
+		return errors.New("order is already finalized")
+	}
+
+	if order.PaymentStatus != nil && *order.PaymentStatus != domain.PaymentPending {
+		return errors.New("payment is already finalized")
+	}
+
+	return nil
 }
 
 func (s *orderService) ListUserOrders(

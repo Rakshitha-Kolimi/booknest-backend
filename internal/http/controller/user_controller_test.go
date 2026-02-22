@@ -20,7 +20,9 @@ type MockUserService struct {
 	FindUserFunc                func(ctx context.Context, id uuid.UUID) (domain.User, error)
 	RegisterFunc                func(ctx context.Context, in domain.UserInput) error
 	LoginFunc                   func(ctx context.Context, in domain.LoginInput) (string, error)
+	ForgotPasswordFunc          func(ctx context.Context, in domain.ForgotPasswordInput) (string, error)
 	ResetPasswordFunc           func(ctx context.Context, userID uuid.UUID, newPassword string) error
+	ResetPasswordWithTokenFunc  func(ctx context.Context, rawToken, newPassword string) error
 	VerifyEmailFunc             func(ctx context.Context, rawToken string) error
 	VerifyMobileFunc            func(ctx context.Context, otp string) error
 	ResendEmailVerificationFunc func(ctx context.Context, userID uuid.UUID) error
@@ -50,9 +52,23 @@ func (m *MockUserService) Login(ctx context.Context, in domain.LoginInput) (stri
 	return "", errors.New("not implemented")
 }
 
+func (m *MockUserService) ForgotPassword(ctx context.Context, in domain.ForgotPasswordInput) (string, error) {
+	if m.ForgotPasswordFunc != nil {
+		return m.ForgotPasswordFunc(ctx, in)
+	}
+	return "", nil
+}
+
 func (m *MockUserService) ResetPassword(ctx context.Context, userID uuid.UUID, newPassword string) error {
 	if m.ResetPasswordFunc != nil {
 		return m.ResetPasswordFunc(ctx, userID, newPassword)
+	}
+	return errors.New("not implemented")
+}
+
+func (m *MockUserService) ResetPasswordWithToken(ctx context.Context, rawToken, newPassword string) error {
+	if m.ResetPasswordWithTokenFunc != nil {
+		return m.ResetPasswordWithTokenFunc(ctx, rawToken, newPassword)
 	}
 	return errors.New("not implemented")
 }
@@ -236,7 +252,11 @@ func TestGetUser_InvalidID(t *testing.T) {
 // TestForgotPassword_Success tests forgot password request
 func TestForgotPassword_Success(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	mockService := &MockUserService{}
+	mockService := &MockUserService{
+		ForgotPasswordFunc: func(ctx context.Context, in domain.ForgotPasswordInput) (string, error) {
+			return "reset-token-123", nil
+		},
+	}
 
 	controller := NewUserController(mockService)
 	router := gin.New()
@@ -255,6 +275,12 @@ func TestForgotPassword_Success(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
+	}
+
+	var response map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &response)
+	if response["reset_token"] != "reset-token-123" {
+		t.Fatalf("expected reset token in response")
 	}
 }
 
@@ -278,6 +304,37 @@ func TestForgotPassword_MissingEmailAndMobile(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestResetPasswordWithToken_Success(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	mockService := &MockUserService{
+		ResetPasswordWithTokenFunc: func(ctx context.Context, rawToken, newPassword string) error {
+			if rawToken != "token-1" || newPassword != "newpassword123" {
+				t.Fatalf("unexpected input: token=%s password=%s", rawToken, newPassword)
+			}
+			return nil
+		},
+	}
+
+	controller := NewUserController(mockService)
+	router := gin.New()
+	controller.RegisterRoutes(router)
+
+	input := map[string]string{
+		"token":        "token-1",
+		"new_password": "newpassword123",
+	}
+	body, _ := json.Marshal(input)
+	req := httptest.NewRequest("POST", "/reset-password/confirm", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
 	}
 }
 

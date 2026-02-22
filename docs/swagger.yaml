@@ -1,5 +1,65 @@
-basePath: /api/v1
+basePath: /
 definitions:
+  Author:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  AuthorInput:
+    properties:
+      name:
+        minLength: 2
+        type: string
+    required:
+    - name
+    type: object
+  Book:
+    properties:
+      author:
+        $ref: '#/definitions/Author'
+      author_id:
+        type: string
+      available_stock:
+        type: integer
+      categories:
+        items:
+          $ref: '#/definitions/domain.Category'
+        type: array
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      description:
+        type: string
+      discount_percentage:
+        type: number
+      id:
+        type: string
+      image_url:
+        type: string
+      is_active:
+        type: boolean
+      isbn:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      publisher:
+        $ref: '#/definitions/Publisher'
+      publisher_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
   ForgotPasswordInput:
     properties:
       email:
@@ -18,6 +78,43 @@ definitions:
     required:
     - password
     type: object
+  Order:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: string
+      order_number:
+        type: string
+      payment_method:
+        $ref: '#/definitions/domain.PaymentMethod'
+      payment_status:
+        $ref: '#/definitions/PaymentStatus'
+      status:
+        $ref: '#/definitions/domain.OrderStatus'
+      total_price:
+        type: number
+      updated_at:
+        type: string
+      user:
+        $ref: '#/definitions/User'
+      user_id:
+        type: string
+    type: object
+  PaymentStatus:
+    enum:
+    - PENDING
+    - PAID
+    - REFUNDED
+    - FAILED
+    type: string
+    x-enum-varnames:
+    - PaymentPending
+    - PaymentPaid
+    - PaymentRefunded
+    - PaymentFailed
   Publisher:
     properties:
       address:
@@ -144,6 +241,204 @@ definitions:
     x-enum-varnames:
     - UserRoleUser
     - UserRoleAdmin
+  domain.BookFilter:
+    properties:
+      authorIDs:
+        items:
+          type: string
+        type: array
+      categoryIDs:
+        items:
+          type: string
+        type: array
+      ids:
+        items:
+          type: string
+        type: array
+      isActive:
+        type: boolean
+      maxPrice:
+        format: float64
+        type: number
+      minPrice:
+        format: float64
+        type: number
+      minStock:
+        type: integer
+      publisherIDs:
+        items:
+          type: string
+        type: array
+      search:
+        description: name / author / isbn
+        type: string
+    type: object
+  domain.BookInput:
+    properties:
+      author_id:
+        type: string
+      author_name:
+        type: string
+      available_stock:
+        type: integer
+      category_ids:
+        items:
+          type: string
+        type: array
+      description:
+        type: string
+      discount_percentage:
+        type: number
+      image_url:
+        type: string
+      is_active:
+        type: boolean
+      isbn:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      publisher_id:
+        type: string
+    required:
+    - author_name
+    - name
+    - publisher_id
+    type: object
+  domain.BookSearchResult:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/Book'
+        type: array
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  domain.CartItemDetail:
+    properties:
+      author_name:
+        type: string
+      book_id:
+        type: string
+      count:
+        type: integer
+      image_url:
+        type: string
+      line_total:
+        type: number
+      name:
+        type: string
+      unit_price:
+        type: number
+    type: object
+  domain.CartItemInput:
+    properties:
+      book_id:
+        type: string
+      count:
+        minimum: 1
+        type: integer
+    required:
+    - book_id
+    - count
+    type: object
+  domain.CartView:
+    properties:
+      cart_id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/domain.CartItemDetail'
+        type: array
+      subtotal:
+        type: number
+      total_items:
+        type: integer
+      user_id:
+        type: string
+    type: object
+  domain.Category:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.CheckoutInput:
+    properties:
+      payment_method:
+        $ref: '#/definitions/domain.PaymentMethod'
+    required:
+    - payment_method
+    type: object
+  domain.OrderItemDetail:
+    properties:
+      book_id:
+        type: string
+      count:
+        type: integer
+      image_url:
+        type: string
+      line_total:
+        type: number
+      name:
+        type: string
+      unit_price:
+        type: number
+    type: object
+  domain.OrderStatus:
+    enum:
+    - PENDING
+    - CANCELLED
+    - COMPLETED
+    type: string
+    x-enum-varnames:
+    - OrderPending
+    - OrderCancelled
+    - OrderCompleted
+  domain.OrderView:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/domain.OrderItemDetail'
+        type: array
+      order:
+        $ref: '#/definitions/Order'
+    type: object
+  domain.PaymentConfirmInput:
+    properties:
+      order_id:
+        type: string
+      success:
+        type: boolean
+    required:
+    - order_id
+    type: object
+  domain.PaymentMethod:
+    enum:
+    - COD
+    - CREDIT_CARD
+    - DEBIT_CARD
+    - NET_BANKING
+    - UPI
+    type: string
+    x-enum-varnames:
+    - PaymentCOD
+    - PaymentCreditCard
+    - PaymentDebitCard
+    - PaymentNetBanking
+    - PaymentUPI
 host: localhost:8080
 info:
   contact:
@@ -156,6 +451,38 @@ info:
   title: BookNest API
   version: "1.0"
 paths:
+  /admin/orders:
+    get:
+      description: Lists all orders (admin only)
+      parameters:
+      - description: Result limit
+        in: query
+        name: limit
+        type: integer
+      - description: Result offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.OrderView'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all orders
+      tags:
+      - Orders
   /auth/forgot-password:
     post:
       consumes:
@@ -374,6 +701,50 @@ paths:
       summary: Reset password
       tags:
       - Auth
+  /auth/reset-password/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Reset password using forgot-password reset token
+      parameters:
+      - description: Token and new password
+        in: body
+        name: payload
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Reset password with token
+      tags:
+      - Auth
   /auth/verify-email:
     post:
       consumes:
@@ -438,6 +809,508 @@ paths:
       summary: Verify mobile
       tags:
       - Verification
+  /authors:
+    get:
+      description: Lists authors
+      parameters:
+      - description: Result limit
+        in: query
+        name: limit
+        type: integer
+      - description: Result offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Author'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List authors
+      tags:
+      - Authors
+    post:
+      consumes:
+      - application/json
+      description: Creates a new author (admin only)
+      parameters:
+      - description: Author input
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/AuthorInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Author'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create author
+      tags:
+      - Authors
+  /authors/{id}:
+    get:
+      description: Fetches a single author by its ID
+      parameters:
+      - description: Author ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Author'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get author by ID
+      tags:
+      - Authors
+  /books:
+    get:
+      description: Returns a list of books
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Book'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: List books
+      tags:
+      - Books
+    post:
+      consumes:
+      - application/json
+      description: Creates a new book (admin only)
+      parameters:
+      - description: Book input
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/domain.BookInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/Book'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create book
+      tags:
+      - Books
+  /books/{id}:
+    get:
+      description: Fetches a single book by its ID
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Book'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get book by ID
+      tags:
+      - Books
+  /books/filter:
+    post:
+      consumes:
+      - application/json
+      description: Filters books by criteria and pagination
+      parameters:
+      - description: Search by name, author, or ISBN
+        in: query
+        name: search
+        type: string
+      - description: Result limit
+        in: query
+        name: limit
+        type: integer
+      - description: Result offset
+        in: query
+        name: offset
+        type: integer
+      - description: Book filter payload
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/domain.BookFilter'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.BookSearchResult'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Filter books
+      tags:
+      - Books
+  /cart:
+    get:
+      description: Fetches the authenticated user's cart with items and totals
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.CartView'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get cart
+      tags:
+      - Cart
+  /cart/clear:
+    post:
+      description: Removes all items from the authenticated user's cart
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Clear cart
+      tags:
+      - Cart
+  /cart/items:
+    post:
+      consumes:
+      - application/json
+      description: Adds a book to the authenticated user's cart
+      parameters:
+      - description: Cart item input
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CartItemInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.CartView'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add item to cart
+      tags:
+      - Cart
+    put:
+      consumes:
+      - application/json
+      description: Updates quantity for a cart item in the authenticated user's cart
+      parameters:
+      - description: Cart item input
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CartItemInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.CartView'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update cart item
+      tags:
+      - Cart
+  /cart/items/{book_id}:
+    delete:
+      description: Removes a book from the authenticated user's cart
+      parameters:
+      - description: Book ID
+        in: path
+        name: book_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.CartView'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Remove item from cart
+      tags:
+      - Cart
+  /orders:
+    get:
+      description: Lists orders for the authenticated user
+      parameters:
+      - description: Result limit
+        in: query
+        name: limit
+        type: integer
+      - description: Result offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.OrderView'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List my orders
+      tags:
+      - Orders
+  /orders/checkout:
+    post:
+      consumes:
+      - application/json
+      description: Creates an order from the authenticated user's cart
+      parameters:
+      - description: Checkout input
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CheckoutInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.OrderView'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Checkout order
+      tags:
+      - Orders
+  /orders/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirms payment for an existing order
+      parameters:
+      - description: Payment confirmation input
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/domain.PaymentConfirmInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.OrderView'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Confirm payment
+      tags:
+      - Orders
   /publishers:
     post:
       consumes:

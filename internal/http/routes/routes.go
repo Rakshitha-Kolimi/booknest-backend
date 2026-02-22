@@ -34,6 +34,9 @@ const (
 
 	AuthorsRoute    = "/authors"
 	AuthorByIDRoute = "/authors/:id"
+
+	CategoriesRoute   = "/categories"
+	CategoryByIDRoute = "/categories/:id"
 )
 
 // ====================

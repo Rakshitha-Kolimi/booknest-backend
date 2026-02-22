@@ -247,7 +247,6 @@ func (r *orderRepo) GetOrderItems(
 		SELECT
 			oi.book_id,
 			b.name,
-			b.author_name,
 			b.image_url,
 			oi.purchase_price,
 			oi.purchase_count,
@@ -270,7 +269,6 @@ func (r *orderRepo) GetOrderItems(
 		if err := rows.Scan(
 			&item.BookID,
 			&item.Name,
-			&item.AuthorName,
 			&item.ImageURL,
 			&item.UnitPrice,
 			&item.Count,

@@ -35,7 +35,6 @@ type OrderItem struct {
 type OrderItemDetail struct {
 	BookID     uuid.UUID `json:"book_id"`
 	Name       string    `json:"name"`
-	AuthorName string    `json:"author_name"`
 	ImageURL   *string   `json:"image_url,omitempty"`
 	UnitPrice  float64   `json:"unit_price"`
 	Count      int       `json:"count"`

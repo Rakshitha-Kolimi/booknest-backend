@@ -33,7 +33,7 @@ type Book struct {
 	Categories         []Category `gorm:"many2many:book_categories;" json:"categories,omitempty"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
-	DeletedAt          time.Time  `json:"deleted_at,omitempty"`
+	DeletedAt          *time.Time `json:"deleted_at,omitempty"`
 } // @name Book
 
 // BookCategory defines model for BookCategory

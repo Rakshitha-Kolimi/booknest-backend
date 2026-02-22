@@ -2,6 +2,7 @@ package book_service
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -23,10 +24,11 @@ func NewBookService(repo domain.BookRepository, db *gorm.DB) domain.BookService 
 
 func (s *bookService) CreateBook(ctx context.Context, input domain.BookInput) (*domain.Book, error) {
 	authorID := uuid.Nil
+	categoryIDs := uniqueCategoryIDs(input.CategoryIDs)
 
 	book := &domain.Book{
-		ID:         uuid.New(),
-		Name:       input.Name,
+		ID:   uuid.New(),
+		Name: input.Name,
 	}
 
 	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -72,8 +74,11 @@ func (s *bookService) CreateBook(ctx context.Context, input domain.BookInput) (*
 			return err
 		}
 
-		if len(input.CategoryIDs) > 0 {
-			for _, cid := range input.CategoryIDs {
+		if len(categoryIDs) > 0 {
+			if err := validateCategories(tx, categoryIDs); err != nil {
+				return err
+			}
+			for _, cid := range categoryIDs {
 				bc := domain.BookCategory{
 					BookID:     book.ID,
 					CategoryID: cid,
@@ -131,6 +136,7 @@ func (s *bookService) UpdateBook(
 	}
 
 	authorID := book.AuthorID
+	categoryIDs := uniqueCategoryIDs(input.CategoryIDs)
 
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if input.AuthorID != nil && *input.AuthorID != uuid.Nil {
@@ -175,6 +181,25 @@ func (s *bookService) UpdateBook(
 			return err
 		}
 
+		if err := tx.Where("book_id = ?", book.ID).Delete(&domain.BookCategory{}).Error; err != nil {
+			return err
+		}
+
+		if len(categoryIDs) > 0 {
+			if err := validateCategories(tx, categoryIDs); err != nil {
+				return err
+			}
+			for _, cid := range categoryIDs {
+				bc := domain.BookCategory{
+					BookID:     book.ID,
+					CategoryID: cid,
+				}
+				if err := tx.Create(&bc).Error; err != nil {
+					return err
+				}
+			}
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -186,4 +211,38 @@ func (s *bookService) UpdateBook(
 
 func (s *bookService) DeleteBook(ctx context.Context, id uuid.UUID) error {
 	return s.repo.Delete(ctx, id)
+}
+
+func uniqueCategoryIDs(categoryIDs []uuid.UUID) []uuid.UUID {
+	if len(categoryIDs) == 0 {
+		return nil
+	}
+
+	seen := make(map[uuid.UUID]struct{}, len(categoryIDs))
+	unique := make([]uuid.UUID, 0, len(categoryIDs))
+	for _, id := range categoryIDs {
+		if id == uuid.Nil {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		unique = append(unique, id)
+	}
+
+	return unique
+}
+
+func validateCategories(tx *gorm.DB, categoryIDs []uuid.UUID) error {
+	var count int64
+	if err := tx.Model(&domain.Category{}).Where("id IN ?", categoryIDs).Count(&count).Error; err != nil {
+		return err
+	}
+
+	if int(count) != len(categoryIDs) {
+		return fmt.Errorf("one or more categories are invalid")
+	}
+
+	return nil
 }

@@ -21,3 +21,6 @@ vendor/
 
 # Env files
 .env
+
+# Cache
+.gocache

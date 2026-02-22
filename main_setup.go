@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -25,6 +26,8 @@ import (
 	"booknest/internal/service/publisher_service"
 	"booknest/internal/service/user_service"
 )
+
+var connectGORM = database.ConnectGORM
 
 func useCORSMiddleware(allowedOrigins map[string]bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -55,14 +58,14 @@ func useCORSMiddleware(allowedOrigins map[string]bool) gin.HandlerFunc {
 }
 
 func SetupServer(dbpool *pgxpool.Pool) (*gin.Engine, error) {
-	gormdb, err := database.ConnectGORM()
+	gormdb, err := connectGORM()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("connect gorm: %w", err)
 	}
 
 	sqlDB, err := gormdb.DB()
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("gorm db handle: %w", err)
 	}
 
 	userRepo := repository.NewUserRepo(dbpool, gormdb)

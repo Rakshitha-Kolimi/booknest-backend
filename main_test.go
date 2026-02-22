@@ -1,21 +1,28 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func TestSetupServer_Success(t *testing.T) {
-	// mock environment variables
-	os.Setenv("DB_HOST", "localhost")
-	os.Setenv("DB_USER", "postgres")
-	os.Setenv("DB_PASSWORD", "pass")
-	os.Setenv("DB_NAME", "booknest_test")
-	os.Setenv("DB_PORT", "5432")
+	t.Setenv("SWAGGER_USER", "swagger")
+	t.Setenv("SWAGGER_PASSWORD", "swagger-pass")
+
+	originalConnectGORM := connectGORM
+	t.Cleanup(func() {
+		connectGORM = originalConnectGORM
+	})
+
+	connectGORM = func() (*gorm.DB, error) {
+		return gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	}
 
 	router, err := SetupServer(&pgxpool.Pool{})
 	if err != nil {
@@ -29,5 +36,21 @@ func TestSetupServer_Success(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200 OK, got %d", w.Code)
+	}
+}
+
+func TestSetupServer_ConnectGORMError(t *testing.T) {
+	originalConnectGORM := connectGORM
+	t.Cleanup(func() {
+		connectGORM = originalConnectGORM
+	})
+
+	connectGORM = func() (*gorm.DB, error) {
+		return nil, errors.New("db unavailable")
+	}
+
+	_, err := SetupServer(&pgxpool.Pool{})
+	if err == nil {
+		t.Fatalf("expected error, got nil")
 	}
 }

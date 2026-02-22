@@ -54,7 +54,7 @@ func (s *authorService) Create(
 		return nil, errors.New("author name already exists")
 	}
 
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
 

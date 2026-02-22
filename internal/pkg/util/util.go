@@ -3,10 +3,15 @@ package util
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"booknest/internal/domain"
 )
+
+var beginTx = func(ctx context.Context, pool *pgxpool.Pool) (pgx.Tx, error) {
+	return pool.Begin(ctx)
+}
 
 // Create a transaction function
 // It should be common method to use in a database
@@ -17,7 +22,7 @@ func WithTransaction(
 ) error {
 
 	// Begin the transaction
-	tx, err := pool.Begin(ctx)
+	tx, err := beginTx(ctx, pool)
 	if err != nil {
 		return err
 	}
